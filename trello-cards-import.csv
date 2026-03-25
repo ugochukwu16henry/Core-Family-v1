@@ -1,0 +1,37 @@
+List,Card Title,Description,Labels,Priority,Sprint
+Strategy & Compliance,Define mission vision and measurable impact KPIs,"Finalize KPI framework, baseline, quarterly targets, and ownership.",Compliance|Product|Feature,P0,Sprint 1
+Strategy & Compliance,Legal and policy framework by region,"Prepare ToS, Privacy, consent, disclaimers, child safety, and regional legal checks.",Compliance|Legal|Security,P0,Sprint 1
+Strategy & Compliance,Trust and safety escalation model,"Build flagged-message workflow, abuse escalation runbook, emergency referrals, and SLA.",Compliance|Admin|Security,P0,Sprint 1
+Product Requirements,Final PRD for multi-role platform,"Document user/provider/admin roles, capability matrix, and MVP boundaries.",Product|Feature|Research,P0,Sprint 1
+Product Requirements,Information architecture and navigation map,"Finalize sitemap and navigation for homepage, category pages, lessons, booking, billing, dashboard.",Product|UX|Feature,P1,Sprint 1
+UX/UI & Brand,Brand system logo favicon color palette,"Create logo, favicon, palette, typography, and accessibility-checked tokens.",UX|Brand|Feature,P1,Sprint 1
+UX/UI & Brand,Responsive design system and reusable components,"Build reusable UI components with loading/empty/error/success states and accessibility checks.",UX|Frontend|Feature,P1,Sprint 1
+UX/UI & Brand,Homepage and trust pages implementation,"Implement mission, vision, impact stats, testimonials, team, privacy, and safety sections.",Frontend|Content|Feature,P1,Sprint 2
+Architecture & DevOps,Cloud architecture on Azure,"Define target Azure services, environments, scaling, and cost controls.",DevOps|Backend|Research,P0,Sprint 1
+Architecture & DevOps,CI CD branching and release strategy,"Set up pipelines for frontend backend database migrations with rollback strategy.",DevOps|Backend|Feature,P0,Sprint 1
+Architecture & DevOps,Observability and incident operations,"Implement logs, metrics, tracing, uptime checks, alerts, and incident runbook.",DevOps|Security|Feature,P1,Sprint 2
+Frontend (Angular),Authentication and account flows,"Build register login logout reset password onboarding and profile completion.",Frontend|Feature|Security,P0,Sprint 1
+Frontend (Angular),Category-tailored content experience,"Deliver tailored pages for Married Singles Parenting Finance Conflict and abuse support.",Frontend|Content|Feature,P0,Sprint 2
+Frontend (Angular),Program enrollment and lesson player,"Implement program details enrollment payment handoff lesson player quizzes and surveys.",Frontend|Payments|Feature,P0,Sprint 2
+Frontend (Angular),Progress dashboard and certificates,"Build progress tracking quiz history milestones and certificate downloads.",Frontend|Data|Feature,P1,Sprint 3
+Frontend (Angular),Multi-language UX phase 1,"Enable English French Spanish Portuguese with locale switch and translation QA.",Frontend|Growth|Feature,P1,Sprint 3
+Backend (.NET / ASP.NET Core),Identity RBAC and role onboarding APIs,"Implement role-based auth provider verification states and secure token flow.",Backend|Security|Feature,P0,Sprint 1
+Backend (.NET / ASP.NET Core),Instructor verification and program management APIs,"Implement qualification upload profile management lesson publishing and live metadata.",Backend|Feature|Compliance,P0,Sprint 2
+Backend (.NET / ASP.NET Core),Counselor profile and booking APIs,"Implement license upload fee setup availability booking and help-intake endpoint.",Backend|Feature|Compliance,P0,Sprint 2
+Backend (.NET / ASP.NET Core),Monetization and commission engine,"Support lesson pricing program fees annual provider fees and 5 percent session commission.",Backend|Payments|Feature,P0,Sprint 2
+Backend (.NET / ASP.NET Core),Notifications and communication service,"Implement event-driven email SMS push reminders and follow-up messages.",Backend|Feature|Growth,P1,Sprint 3
+Data (PostgreSQL),Data model and schema design,"Create ERD and migrations for users roles programs lessons sessions payments reviews and audits.",Data|Backend|Feature,P0,Sprint 1
+Data (PostgreSQL),Data governance and privacy controls,"Implement encryption, masking, backups, restore drills, and data export/deletion APIs.",Data|Security|Compliance,P0,Sprint 2
+Payments & Billing,Payment gateway integration Stripe Paystack Google Pay,"Create unified billing abstraction with currency support and failure-recovery flow.",Payments|Backend|Feature,P0,Sprint 2
+Payments & Billing,Invoicing receipts refunds and disputes,"Add receipts, refund workflow, disputes, and admin override audit trail.",Payments|Admin|Feature,P1,Sprint 3
+AI Matching & Recommendations,Counselor recommendation engine MVP,"Rank counselors by country language problem type availability with explainability.",AI|Backend|Feature,P1,Sprint 3
+AI Matching & Recommendations,Content recommendation engine MVP,"Recommend lessons and programs by category behavior and cold-start rules.",AI|Data|Feature,P2,Backlog
+Admin Dashboard (Blazor/MVC),Admin control center foundation,"Build admin auth RBAC user/provider management and suspension/reinstatement controls.",Admin|Backend|Feature,P0,Sprint 3
+Admin Dashboard (Blazor/MVC),Flagged content and message review,"Create moderation queue severity actions escalation tracking and audit logs.",Admin|Security|Feature,P0,Sprint 3
+Admin Dashboard (Blazor/MVC),Operations analytics dashboard,"Show revenue conversion churn completion utilization and geo/language adoption KPIs.",Admin|Data|Feature,P1,Sprint 3
+QA Security & Performance,Test strategy and automation,"Implement unit integration E2E suites with critical release gate in CI.",QA|DevOps|Feature,P0,Sprint 2
+QA Security & Performance,Security hardening and abuse prevention,"Apply OWASP controls rate limits bot defense file scanning and secret management.",Security|Backend|Feature,P0,Sprint 2
+QA Security & Performance,Performance and scalability readiness,"Run load tests optimize latency budgets and configure CDN caching.",QA|DevOps|Feature,P1,Sprint 3
+Launch Readiness,Pilot launch plan country language rollout,"Define pilot markets localization readiness success metrics and rollback criteria.",Growth|Compliance|Feature,P1,Sprint 3
+Launch Readiness,Support model and knowledge base,"Publish top support articles SLA workflow and safety escalation process.",Growth|Admin|Feature,P1,Sprint 3
+Launch Readiness,App store and web release packaging,"Prepare web release and mobile packaging strategy with policy-compliant metadata.",Growth|Frontend|Feature,P2,Backlog
