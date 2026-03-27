@@ -60,6 +60,14 @@ public interface IPaymentService
     Task<bool> HasCompletedSessionPaymentAsync(Guid userId, Guid sessionId);
 }
 
+public interface IAdminService
+{
+    Task<IReadOnlyList<AdminUserSummaryDto>> GetUsersAsync();
+    Task<AdminUserSummaryDto> SetUserActiveStatusAsync(Guid userId, bool isActive);
+    Task<IReadOnlyList<AdminReviewSummaryDto>> GetFlaggedReviewsAsync();
+    Task<AdminReviewSummaryDto> SetReviewFlagStatusAsync(Guid reviewId, bool isFlagged);
+}
+
 public interface ITokenService
 {
     string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles);

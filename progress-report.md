@@ -118,10 +118,23 @@ Date: 2026-03-27
     - Program learning overview page
     - Lesson player page
     - Continue-learning links from My Learning
+- Counselor booking lifecycle hardening is now operational:
+  - Session lifecycle API additions:
+    - Get session by ID
+    - Confirm session
+    - Cancel session
+    - Reschedule session
+  - Counselor conflict checks now support booking and rescheduling safely
+  - Session summaries now include payment state
+  - Session payment completion now auto-confirms the session when appropriate
+  - Angular Sessions page at `/sessions` with:
+    - Payment action for unpaid sessions
+    - Cancel action
+    - Reschedule form
+    - Session and payment status visibility
 - Remaining major work:
   - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
   - Refund/dispute management endpoints and admin workflows
-  - Counselor booking lifecycle hardening (availability management, confirmation, cancellation/reschedule, payment-state coupling)
   - Admin workflows
   - AI counselor matching endpoint integration into "I need help" user flow
   - Expanded integration and E2E testing
