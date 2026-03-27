@@ -1,68 +1,83 @@
+using CoreFamily.API.Application.DTOs;
+using CoreFamily.API.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreFamily.API.Controllers;
 
 public class AuthController : BaseApiController
 {
-    // POST api/v1/auth/register
+    private readonly IAuthService _auth;
+
+    public AuthController(IAuthService auth) => _auth = auth;
+
+    /// <summary>Register a new user (Client, Instructor, or Counselor).</summary>
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterRequest request)
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Registration endpoint — coming soon" });
+        var result = await _auth.RegisterAsync(dto);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
-    // POST api/v1/auth/login
+    /// <summary>Authenticate and receive JWT + refresh token.</summary>
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Login endpoint — coming soon" });
+        var result = await _auth.LoginAsync(dto);
+        return Ok(result);
     }
 
-    // POST api/v1/auth/refresh
+    /// <summary>Exchange a refresh token for a new access token.</summary>
     [HttpPost("refresh")]
-    public IActionResult Refresh([FromBody] RefreshRequest request)
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Token refresh — coming soon" });
+        var result = await _auth.RefreshTokenAsync(dto.RefreshToken);
+        return Ok(result);
     }
 
-    // POST api/v1/auth/logout
+    /// <summary>Revoke refresh token (logout).</summary>
     [HttpPost("logout")]
-    public IActionResult Logout()
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Logout — coming soon" });
+        await _auth.RevokeTokenAsync(dto.RefreshToken);
+        return NoContent();
     }
 
-    // POST api/v1/auth/forgot-password
+    /// <summary>Request a password reset email.</summary>
     [HttpPost("forgot-password")]
-    public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Password reset initiated" });
+        await _auth.ForgotPasswordAsync(dto.Email);
+        return NoContent(); // Always 204 — never reveal if email exists
     }
 
-    // POST api/v1/auth/verify-email
-    [HttpPost("verify-email")]
-    public IActionResult VerifyEmail([FromQuery] string token)
+    /// <summary>Reset password using token from email.</summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        // TODO: implement in Phase 1
-        return Ok(new { message = "Email verification — coming soon" });
+        await _auth.ResetPasswordAsync(dto);
+        return NoContent();
+    }
+
+    /// <summary>Verify email address using token from verification email.</summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        await _auth.VerifyEmailAsync(token);
+        return NoContent();
     }
 }
-
-// ── Request DTOs (move to DTOs folder in Phase 1) ────────────────
-public record RegisterRequest(
-    string Email,
-    string Password,
-    string FirstName,
-    string LastName,
-    string Role,       // Client | Instructor | Counselor
-    string Category    // Single | MarriedMan | MarriedWoman | Parent | Family | Youth
-);
-
-public record LoginRequest(string Email, string Password);
-public record RefreshRequest(string RefreshToken);
-public record ForgotPasswordRequest(string Email);

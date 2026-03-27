@@ -1,0 +1,23 @@
+<section class="dashboard page-shell">
+  <div class="dashboard-hero card">
+    <span class="eyebrow">Private dashboard</span>
+    <h1>Welcome, {{ user()?.firstName || 'Member' }}.</h1>
+    <p>This is the secured route connected to the JWT auth flow. The next phase can attach enrollments, lesson progress, counseling sessions, and payment history here.</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <article class="card dashboard-card">
+      <h2>Account state</h2>
+      <p><strong>Email:</strong> {{ user()?.email || 'Unavailable' }}</p>
+      <p><strong>Role:</strong> {{ user()?.role || 'Unavailable' }}</p>
+      <p><strong>Category:</strong> {{ user()?.category || 'Unavailable' }}</p>
+    </article>
+
+    <article class="card dashboard-card">
+      <h2>Next implementation block</h2>
+      <p>Programs and lessons API</p>
+      <p>Enrollment and progress tracking</p>
+      <p>Payments and counselor workflows</p>
+    </article>
+  </div>
+</section>

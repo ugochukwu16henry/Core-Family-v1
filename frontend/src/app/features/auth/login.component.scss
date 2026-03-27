@@ -1,0 +1,29 @@
+.auth-card-header h2 {
+  margin: 1rem 0 0.4rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2rem;
+}
+
+.auth-card-header p,
+.auth-switch {
+  color: var(--muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.submit-button {
+  margin-top: 0.5rem;
+}
+
+.auth-switch {
+  margin-top: 1.25rem;
+}
+
+.auth-switch a {
+  color: var(--brand);
+  font-weight: 700;
+}

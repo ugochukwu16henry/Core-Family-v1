@@ -1,3 +1,11 @@
+using CoreFamily.API.Application.DTOs;
+using CoreFamily.API.Application.Interfaces;
+using CoreFamily.API.Application.Validators;
+using CoreFamily.API.Infrastructure.Data;
+using CoreFamily.API.Infrastructure.Middleware;
+using CoreFamily.API.Infrastructure.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -82,9 +90,20 @@ builder.Services.AddCors(options =>
 });
 
 // ── Database ──────────────────────────────────────────────────────
-// Uncomment once CoreFamilyDbContext is created in Infrastructure layer:
-// builder.Services.AddDbContext<CoreFamilyDbContext>(options =>
-//     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<CoreFamilyDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npg => npg.MigrationsAssembly("CoreFamily.API")));
+
+// ── Application Services ──────────────────────────────────────────
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+// ── FluentValidation ──────────────────────────────────────────────
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
 
 // ── Build ─────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -97,6 +116,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("CoreFamilyCors");
 app.UseAuthentication();

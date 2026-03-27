@@ -1,0 +1,177 @@
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 4rem 0 2rem;
+}
+
+.hero-copy h1,
+.section-header h2,
+.cta h2,
+.pillar h3,
+.hero-panel strong {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.hero-copy h1 {
+  margin: 1rem 0;
+  max-width: 14ch;
+  font-size: clamp(3rem, 7vw, 5.8rem);
+  line-height: 0.95;
+}
+
+.hero-copy p {
+  max-width: 42rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.hero-actions,
+.hero-stats,
+.pillar-grid,
+.testimonial-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-actions {
+  margin-top: 1.5rem;
+  grid-template-columns: repeat(2, max-content);
+}
+
+.hero-stats {
+  margin-top: 1.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-card,
+.pillar,
+.testimonial,
+.cta,
+.hero-panel {
+  border-radius: 1.75rem;
+}
+
+.stat-card {
+  padding: 1rem;
+}
+
+.stat-card strong {
+  font-size: 2rem;
+  display: block;
+}
+
+.stat-card span,
+.pillar p,
+.testimonial span,
+.panel-timeline span {
+  color: var(--muted);
+}
+
+.hero-panel {
+  padding: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 240, 0.9)),
+    linear-gradient(135deg, rgba(35, 83, 71, 0.08), rgba(199, 123, 75, 0.06));
+}
+
+.panel-header,
+.panel-timeline div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.panel-timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel-timeline div {
+  flex-direction: column;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pillars {
+  padding: 3rem 0;
+}
+
+.section-header {
+  max-width: 42rem;
+}
+
+.section-header h2 {
+  margin: 1rem 0 0;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+
+.pillar-grid {
+  margin-top: 1.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pillar,
+.testimonial,
+.cta {
+  padding: 1.4rem;
+}
+
+.pillar h3 {
+  margin-top: 0;
+}
+
+.testimonial-band {
+  padding: 1rem 0 3rem;
+}
+
+.testimonial-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.testimonial p {
+  margin-top: 0;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.cta {
+  margin-bottom: 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .pillar-grid,
+  .testimonial-grid,
+  .cta {
+    grid-template-columns: 1fr;
+  }
+
+  .hero,
+  .cta {
+    display: grid;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-actions,
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+}
