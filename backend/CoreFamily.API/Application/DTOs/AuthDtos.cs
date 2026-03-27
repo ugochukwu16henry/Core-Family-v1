@@ -48,3 +48,63 @@ public record UpdateProfileDto(
     string? PreferredLanguage,
     string? TimeZone
 );
+
+// ── Counselors & Sessions ───────────────────────────────────────
+public record CounselorSummaryDto(
+    Guid Id,
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    string? Bio,
+    string? Country,
+    string? City,
+    string PreferredLanguage,
+    string? Specialization,
+    decimal HourlyRateUsd,
+    string[] Languages,
+    bool AcceptsNewClients,
+    string LicenseStatus,
+    decimal AverageRating,
+    int ReviewCount
+);
+
+public record CounselorProfileUpsertDto(
+    string? LicenseUrl,
+    string? QualificationsUrl,
+    DateTime? LicenseExpiryDate,
+    string? Specialization,
+    decimal HourlyRateUsd,
+    string[] Languages,
+    string? AvailabilityJson,
+    bool AcceptsNewClients
+);
+
+public class CounselorSearchDto
+{
+    public string? Language { get; init; }
+    public string? Specialization { get; init; }
+    public string? Country { get; init; }
+    public bool? AcceptsNewClients { get; init; }
+}
+
+public record BookSessionDto(
+    Guid CounselorId,
+    DateTime ScheduledAt,
+    int DurationMinutes,
+    string? Notes
+);
+
+public record SessionSummaryDto(
+    Guid Id,
+    Guid CounselorId,
+    Guid ClientId,
+    string CounselorName,
+    string ClientName,
+    DateTime ScheduledAt,
+    int DurationMinutes,
+    string Status,
+    decimal AmountPaid,
+    decimal PlatformCommission,
+    string? Notes,
+    string? MeetingUrl
+);

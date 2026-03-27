@@ -19,6 +19,16 @@ public interface IUserService
     Task<UserSummaryDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
 }
 
+public interface ICounselorService
+{
+    Task<IReadOnlyList<CounselorSummaryDto>> SearchAsync(CounselorSearchDto search);
+    Task<CounselorSummaryDto?> GetByIdAsync(Guid counselorId);
+    Task<CounselorSummaryDto> UpsertMyProfileAsync(Guid userId, CounselorProfileUpsertDto dto);
+    Task<IReadOnlyList<SessionSummaryDto>> GetCounselorSessionsAsync(Guid userId);
+    Task<IReadOnlyList<SessionSummaryDto>> GetClientSessionsAsync(Guid userId);
+    Task<SessionSummaryDto> BookSessionAsync(Guid clientUserId, BookSessionDto dto);
+}
+
 public interface ITokenService
 {
     string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles);

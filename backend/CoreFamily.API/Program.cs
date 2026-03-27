@@ -100,6 +100,7 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICounselorService, CounselorService>();
 
 // ── FluentValidation ──────────────────────────────────────────────
 builder.Services.AddFluentValidationAutoValidation();

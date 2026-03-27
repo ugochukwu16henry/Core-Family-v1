@@ -77,3 +77,40 @@ public class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
             .Matches(@"[^a-zA-Z0-9]").WithMessage("Must contain a special character.");
     }
 }
+
+public class CounselorProfileUpsertValidator : AbstractValidator<CounselorProfileUpsertDto>
+{
+    public CounselorProfileUpsertValidator()
+    {
+        RuleFor(x => x.HourlyRateUsd)
+            .GreaterThanOrEqualTo(0)
+            .LessThanOrEqualTo(10000);
+
+        RuleFor(x => x.Specialization)
+            .MaximumLength(250);
+
+        RuleFor(x => x.Languages)
+            .NotNull()
+            .Must(x => x.Length > 0)
+            .WithMessage("At least one language is required.");
+
+        RuleForEach(x => x.Languages)
+            .NotEmpty()
+            .MaximumLength(10);
+    }
+}
+
+public class BookSessionValidator : AbstractValidator<BookSessionDto>
+{
+    public BookSessionValidator()
+    {
+        RuleFor(x => x.CounselorId).NotEmpty();
+        RuleFor(x => x.ScheduledAt)
+            .Must(x => x > DateTime.UtcNow)
+            .WithMessage("Session must be scheduled in the future.");
+        RuleFor(x => x.DurationMinutes)
+            .InclusiveBetween(30, 180);
+        RuleFor(x => x.Notes)
+            .MaximumLength(2000);
+    }
+}
