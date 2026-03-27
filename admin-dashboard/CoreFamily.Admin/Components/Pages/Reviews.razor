@@ -1,0 +1,71 @@
+@page "/reviews"
+@inject CoreFamily.Admin.Services.AdminApiClient AdminApi
+
+<PageTitle>Flagged Reviews</PageTitle>
+
+<h1>Flagged Reviews</h1>
+<p>Review and clear flagged counselor feedback.</p>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <p class="error-text">@errorMessage</p>
+}
+
+<button class="btn btn-primary" @onclick="LoadReviewsAsync" disabled="@isLoading">@(isLoading ? "Loading..." : "Load Flagged Reviews")</button>
+
+@if (reviews.Count > 0)
+{
+    <div class="admin-grid">
+        @foreach (var review in reviews)
+        {
+            <article class="admin-card">
+                <h3>Rating: @review.Rating / 5</h3>
+                <p><strong>Reviewer:</strong> @review.ReviewerName</p>
+                <p><strong>Counselor:</strong> @(review.CounselorName ?? "Unassigned")</p>
+                <p><strong>Text:</strong> @(string.IsNullOrWhiteSpace(review.ReviewText) ? "No review text" : review.ReviewText)
+                </p>
+                <p><strong>Flagged:</strong> @(review.IsFlagged ? "Yes" : "No")</p>
+                <button class="btn btn-secondary" @onclick="() => ClearFlagAsync(review.Id)">Clear Flag</button>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private readonly List<CoreFamily.Admin.Models.AdminReviewSummary> reviews = [];
+    private bool isLoading;
+    private string? errorMessage;
+
+    private async Task LoadReviewsAsync()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            reviews.Clear();
+            reviews.AddRange(await AdminApi.GetFlaggedReviewsAsync());
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ClearFlagAsync(Guid reviewId)
+    {
+        try
+        {
+            errorMessage = null;
+            await AdminApi.SetReviewFlagStatusAsync(reviewId, false);
+            reviews.RemoveAll(r => r.Id == reviewId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

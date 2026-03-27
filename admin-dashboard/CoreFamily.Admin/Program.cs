@@ -5,6 +5,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped<CoreFamily.Admin.Services.AdminSessionState>();
+builder.Services.AddScoped<CoreFamily.Admin.Services.AdminApiClient>();
+builder.Services.AddHttpClient("CoreFamilyApi", client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5000/api/v1/";
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 var app = builder.Build();
 

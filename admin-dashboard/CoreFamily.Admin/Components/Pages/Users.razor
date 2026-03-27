@@ -1,0 +1,78 @@
+@page "/users"
+@inject CoreFamily.Admin.Services.AdminApiClient AdminApi
+
+<PageTitle>Users</PageTitle>
+
+<h1>User Moderation</h1>
+<p>Suspend or reactivate platform users with an admin or moderator JWT.</p>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <p class="error-text">@errorMessage</p>
+}
+
+<button class="btn btn-primary" @onclick="LoadUsersAsync" disabled="@isLoading">@(isLoading ? "Loading..." : "Load Users")</button>
+
+@if (users.Count > 0)
+{
+    <div class="admin-grid">
+        @foreach (var user in users)
+        {
+            <article class="admin-card">
+                <h3>@user.FirstName @user.LastName</h3>
+                <p><strong>Email:</strong> @user.Email</p>
+                <p><strong>Role:</strong> @user.Role</p>
+                <p><strong>Category:</strong> @user.Category</p>
+                <p><strong>Status:</strong> @(user.IsActive ? "Active" : "Suspended")</p>
+                <p><strong>Verified:</strong> @(user.EmailVerified ? "Yes" : "No")</p>
+                <button class="btn btn-secondary" @onclick="() => ToggleUserAsync(user)">
+                    @(user.IsActive ? "Suspend" : "Reactivate")
+                </button>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private readonly List<CoreFamily.Admin.Models.AdminUserSummary> users = [];
+    private bool isLoading;
+    private string? errorMessage;
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            users.Clear();
+            users.AddRange(await AdminApi.GetUsersAsync());
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleUserAsync(CoreFamily.Admin.Models.AdminUserSummary user)
+    {
+        try
+        {
+            errorMessage = null;
+            var updated = await AdminApi.SetUserActiveStatusAsync(user.Id, !user.IsActive);
+            if (updated is null)
+                return;
+
+            var index = users.FindIndex(u => u.Id == user.Id);
+            if (index >= 0)
+                users[index] = updated;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

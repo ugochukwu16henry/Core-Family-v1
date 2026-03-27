@@ -60,7 +60,7 @@ public class AdminService : IAdminService
     {
         var reviews = await _db.Reviews
             .Include(r => r.Reviewer).ThenInclude(u => u.Profile)
-            .Include(r => r.Counselor).ThenInclude(c => c.User).ThenInclude(u => u.Profile)
+            .Include(r => r.Counselor!).ThenInclude(c => c.User).ThenInclude(u => u.Profile)
             .Where(r => r.IsFlagged)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -72,7 +72,7 @@ public class AdminService : IAdminService
     {
         var review = await _db.Reviews
             .Include(r => r.Reviewer).ThenInclude(u => u.Profile)
-            .Include(r => r.Counselor).ThenInclude(c => c.User).ThenInclude(u => u.Profile)
+            .Include(r => r.Counselor!).ThenInclude(c => c.User).ThenInclude(u => u.Profile)
             .FirstOrDefaultAsync(r => r.Id == reviewId)
             ?? throw new KeyNotFoundException("Review not found.");
 
@@ -86,7 +86,7 @@ public class AdminService : IAdminService
         review.ReviewerId,
         BuildName(review.Reviewer.Profile?.FirstName, review.Reviewer.Profile?.LastName),
         review.CounselorId,
-        review.Counselor is null ? null : BuildName(review.Counselor.User.Profile?.FirstName, review.Counselor.User.Profile?.LastName),
+        review.Counselor?.User?.Profile is null ? null : BuildName(review.Counselor.User.Profile.FirstName, review.Counselor.User.Profile.LastName),
         review.SessionId,
         review.Rating,
         review.ReviewText,
