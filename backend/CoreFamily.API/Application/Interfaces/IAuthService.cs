@@ -29,6 +29,14 @@ public interface ICounselorService
     Task<SessionSummaryDto> BookSessionAsync(Guid clientUserId, BookSessionDto dto);
 }
 
+public interface IProgramService
+{
+    Task<IReadOnlyList<ProgramSummaryDto>> GetPublishedProgramsAsync(ProgramSearchDto search);
+    Task<ProgramDetailDto?> GetPublishedProgramByIdAsync(Guid programId);
+    Task<EnrollmentSummaryDto> EnrollAsync(Guid userId, Guid programId);
+    Task<IReadOnlyList<EnrollmentSummaryDto>> GetMyEnrollmentsAsync(Guid userId);
+}
+
 public interface ITokenService
 {
     string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles);

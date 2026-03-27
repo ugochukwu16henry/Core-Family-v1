@@ -1,0 +1,24 @@
+<section class="my-learning page-shell">
+  <div class="card">
+    <span class="eyebrow">My Learning</span>
+    <h1>Your enrolled programs</h1>
+    <p>Track your current learning progress across all active programs.</p>
+  </div>
+
+  <p class="feedback error" *ngIf="error()">{{ error() }}</p>
+  <p class="feedback" *ngIf="loading()">Loading your enrollments...</p>
+
+  <div class="grid" *ngIf="!loading() && enrollments().length > 0">
+    <article class="card" *ngFor="let enrollment of enrollments()">
+      <h2>{{ enrollment.programTitle }}</h2>
+      <p>Enrolled: {{ enrollment.enrolledAt | date:'mediumDate' }}</p>
+      <p>{{ enrollment.completedLessons }} / {{ enrollment.totalLessons }} lessons completed</p>
+      <p *ngIf="enrollment.completedAt">Completed: {{ enrollment.completedAt | date:'mediumDate' }}</p>
+      <p *ngIf="!enrollment.completedAt">Status: In progress</p>
+    </article>
+  </div>
+
+  <div class="card" *ngIf="!loading() && enrollments().length === 0">
+    <p>You have not enrolled in any programs yet.</p>
+  </div>
+</section>

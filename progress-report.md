@@ -76,8 +76,16 @@ Date: 2026-03-27
   - Database schema
   - Angular auth UX
   - Local env workflow
+- Program enrollment foundation is now operational:
+  - Published programs API (`GET /api/v1/programs`)
+  - Program details API (`GET /api/v1/programs/{id}`)
+  - Enrollment API (`POST /api/v1/programs/{id}/enroll`)
+  - My enrollments API (`GET /api/v1/programs/me/enrollments`)
+  - Angular Programs page (`/programs`)
+  - Angular My Learning page (`/my-learning`)
 - Remaining major work:
-  - Content/program APIs
+  - Instructor program publishing workflow
+  - Lesson player and progress updates from content consumption
   - Payments integration
   - Counselor booking flow
   - Admin workflows

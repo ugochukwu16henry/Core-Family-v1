@@ -15,9 +15,18 @@ export const routes: Routes = [
 				loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent)
 			},
 			{
+				path: 'programs',
+				loadComponent: () => import('./features/programs/programs.component').then((m) => m.ProgramsComponent)
+			},
+			{
 				path: 'dashboard',
 				canActivate: [authGuard],
 				loadComponent: () => import('./features/home/dashboard.component').then((m) => m.DashboardComponent)
+			},
+			{
+				path: 'my-learning',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/programs/my-learning.component').then((m) => m.MyLearningComponent)
 			}
 		]
 	},

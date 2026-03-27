@@ -1,0 +1,42 @@
+<section class="programs page-shell">
+  <div class="card programs-hero">
+    <span class="eyebrow">Programs</span>
+    <h1>Structured learning for stronger families.</h1>
+    <p>Explore expert-led programs and enroll to begin your guided journey.</p>
+  </div>
+
+  <p class="feedback error" *ngIf="error()">{{ error() }}</p>
+  <p class="feedback" *ngIf="loading()">Loading programs...</p>
+
+  <div class="program-grid" *ngIf="!loading() && programs().length > 0">
+    <article class="card program-card" *ngFor="let program of programs()">
+      <span class="tag">{{ program.category }}</span>
+      <h2>{{ program.title }}</h2>
+      <p>{{ program.description }}</p>
+      <ul>
+        <li>{{ program.durationWeeks }} weeks</li>
+        <li>{{ program.lessonCount }} lessons</li>
+        <li>Instructor: {{ program.instructorName }}</li>
+      </ul>
+      <div class="actions">
+        <strong>${{ program.price }}</strong>
+        <button
+          type="button"
+          class="button-primary"
+          (click)="enroll(program.id)"
+          [disabled]="enrolledProgramIds().has(program.id)">
+          {{ enrolledProgramIds().has(program.id) ? 'Enrolled' : 'Enroll now' }}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="card" *ngIf="!loading() && programs().length === 0">
+    <p>No published programs yet. Check back soon.</p>
+  </div>
+
+  <div class="card" *ngIf="isAuthenticated()">
+    <h3>Already enrolled?</h3>
+    <a class="button-ghost" routerLink="/my-learning">Open My Learning</a>
+  </div>
+</section>

@@ -1,0 +1,48 @@
+.programs {
+  display: grid;
+  gap: 1rem;
+}
+
+.programs-hero h1 {
+  margin-bottom: 0.5rem;
+}
+
+.program-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.program-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.program-card ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: #526477;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tag {
+  width: fit-content;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+  background: #e7f0ff;
+  color: #1f4ba8;
+  font-size: 0.8rem;
+}
+
+.feedback {
+  margin: 0;
+}
+
+.feedback.error {
+  color: #c92a2a;
+}
