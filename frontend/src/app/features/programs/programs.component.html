@@ -23,8 +23,8 @@
         <button
           type="button"
           class="button-primary"
-          (click)="enroll(program.id)"
-          [disabled]="enrolledProgramIds().has(program.id)">
+          (click)="enroll(program)"
+          [disabled]="enrolledProgramIds().has(program.id) || actionInProgress()">
           {{ enrolledProgramIds().has(program.id) ? 'Enrolled' : 'Enroll now' }}
         </button>
       </div>

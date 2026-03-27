@@ -102,6 +102,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICounselorService, CounselorService>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+builder.Services.AddScoped<IPaymentGateway, PaystackPaymentGateway>();
+builder.Services.AddScoped<IPaymentGateway, GooglePayPaymentGateway>();
 
 // ── FluentValidation ──────────────────────────────────────────────
 builder.Services.AddFluentValidationAutoValidation();

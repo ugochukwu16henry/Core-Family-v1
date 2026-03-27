@@ -37,6 +37,15 @@ public interface IProgramService
     Task<IReadOnlyList<EnrollmentSummaryDto>> GetMyEnrollmentsAsync(Guid userId);
 }
 
+public interface IPaymentService
+{
+    Task<CheckoutSessionDto> CreateProgramCheckoutAsync(Guid userId, Guid programId, CreateCheckoutRequestDto request);
+    Task<CheckoutSessionDto> CreateSessionCheckoutAsync(Guid userId, Guid sessionId, CreateCheckoutRequestDto request);
+    Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string? signature);
+    Task<IReadOnlyList<TransactionSummaryDto>> GetMyTransactionsAsync(Guid userId);
+    Task<bool> HasCompletedProgramPaymentAsync(Guid userId, Guid programId);
+}
+
 public interface ITokenService
 {
     string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles);

@@ -9,8 +9,13 @@ namespace CoreFamily.API.Infrastructure.Services;
 public class ProgramService : IProgramService
 {
     private readonly CoreFamilyDbContext _db;
+    private readonly IPaymentService _payments;
 
-    public ProgramService(CoreFamilyDbContext db) => _db = db;
+    public ProgramService(CoreFamilyDbContext db, IPaymentService payments)
+    {
+        _db = db;
+        _payments = payments;
+    }
 
     public async Task<IReadOnlyList<ProgramSummaryDto>> GetPublishedProgramsAsync(ProgramSearchDto search)
     {
@@ -81,6 +86,15 @@ public class ProgramService : IProgramService
             .Include(p => p.Lessons)
             .FirstOrDefaultAsync(p => p.Id == programId && p.IsPublished)
             ?? throw new KeyNotFoundException("Program not found or unpublished.");
+
+        if (program.Price > 0)
+        {
+            var isPaid = await _payments.HasCompletedProgramPaymentAsync(userId, programId);
+            if (!isPaid)
+            {
+                throw new InvalidOperationException("Payment required before enrollment for this program.");
+            }
+        }
 
         var exists = await _db.Enrollments.AnyAsync(e => e.UserId == userId && e.ProgramId == programId);
         if (exists)

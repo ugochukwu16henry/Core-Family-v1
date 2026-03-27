@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { switchMap } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
+import { PaymentsService } from '../../core/services/payments.service';
 import { ProgramsService } from '../../core/services/programs.service';
 import { ProgramSummary } from '../../core/models/program.model';
 
@@ -15,11 +17,13 @@ import { ProgramSummary } from '../../core/models/program.model';
 })
 export class ProgramsComponent {
   private readonly programsService = inject(ProgramsService);
+  private readonly paymentsService = inject(PaymentsService);
   private readonly authService = inject(AuthService);
 
   readonly programs = signal<ProgramSummary[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly actionInProgress = signal(false);
   readonly enrolledProgramIds = signal<Set<string>>(new Set());
   readonly isAuthenticated = this.authService.isAuthenticated;
 
@@ -27,23 +31,64 @@ export class ProgramsComponent {
     this.loadPrograms();
   }
 
-  enroll(programId: string): void {
+  enroll(program: ProgramSummary): void {
     if (!this.isAuthenticated()) {
       this.error.set('Please login to enroll in a program.');
       return;
     }
 
-    this.programsService.enroll(programId).subscribe({
-      next: () => {
-        const current = new Set(this.enrolledProgramIds());
-        current.add(programId);
-        this.enrolledProgramIds.set(current);
-      },
-      error: (err) => {
-        const message = err?.error?.message || 'Unable to enroll right now.';
-        this.error.set(message);
-      }
+    this.error.set(null);
+    this.actionInProgress.set(true);
+
+    const enroll$ = this.programsService.enroll(program.id);
+
+    if (program.price <= 0) {
+      enroll$.subscribe({
+        next: () => this.markAsEnrolled(program.id),
+        error: (err) => this.setActionError(err),
+        complete: () => this.actionInProgress.set(false)
+      });
+      return;
+    }
+
+    this.paymentsService.createProgramCheckout(program.id, {
+      provider: 'stripe',
+      currency: 'USD',
+      successUrl: window.location.href,
+      cancelUrl: window.location.href
+    }).pipe(
+      switchMap((checkout) => {
+        if (checkout.requiresRedirect && checkout.checkoutUrl) {
+          window.location.assign(checkout.checkoutUrl);
+          throw new Error('Redirecting to payment provider...');
+        }
+
+        if (checkout.status !== 'Completed') {
+          throw new Error('Payment is still pending. Please try again shortly.');
+        }
+
+        return enroll$;
+      })
+    ).subscribe({
+      next: () => this.markAsEnrolled(program.id),
+      error: (err) => this.setActionError(err),
+      complete: () => this.actionInProgress.set(false)
     });
+  }
+
+  private markAsEnrolled(programId: string): void {
+    const current = new Set(this.enrolledProgramIds());
+    current.add(programId);
+    this.enrolledProgramIds.set(current);
+    this.actionInProgress.set(false);
+  }
+
+  private setActionError(err: unknown): void {
+    const message = (err as { error?: { message?: string }; message?: string })?.error?.message
+      || (err as { message?: string })?.message
+      || 'Unable to enroll right now.';
+    this.error.set(message);
+    this.actionInProgress.set(false);
   }
 
   private loadPrograms(): void {
