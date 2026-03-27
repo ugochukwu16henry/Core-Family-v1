@@ -1,5 +1,6 @@
 using CoreFamily.API.Application.DTOs;
 using CoreFamily.API.Application.Interfaces;
+using CoreFamily.API.Domain.Enums;
 using CoreFamily.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -79,6 +80,68 @@ public class AdminService : IAdminService
         review.IsFlagged = isFlagged;
         await _db.SaveChangesAsync();
         return MapReview(review);
+    }
+
+    public async Task<IReadOnlyList<AdminTransactionSummaryDto>> GetTransactionsAsync()
+    {
+        var transactions = await _db.Transactions
+            .Include(t => t.User)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        return transactions.Select(t => new AdminTransactionSummaryDto(
+            t.Id,
+            t.UserId,
+            t.User.Email,
+            t.Type,
+            t.Amount,
+            t.Currency,
+            t.PaymentMethod,
+            t.Status,
+            t.ReferenceId,
+            t.ExternalTransactionId,
+            t.CreatedAt,
+            t.FailureReason)).ToList();
+    }
+
+    public async Task<AdminTransactionSummaryDto> RefundTransactionAsync(Guid transactionId, string reason)
+    {
+        var transaction = await _db.Transactions
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.Id == transactionId)
+            ?? throw new KeyNotFoundException("Transaction not found.");
+
+        if (transaction.Status != TransactionStatus.Completed)
+            throw new InvalidOperationException("Only completed transactions can be refunded.");
+
+        var cleanReason = string.IsNullOrWhiteSpace(reason) ? "Refund processed by admin." : reason.Trim();
+        transaction.Status = TransactionStatus.Refunded;
+        transaction.FailureReason = cleanReason;
+
+        if (transaction.Type == TransactionType.CounselingSession && transaction.ReferenceId.HasValue)
+        {
+            var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == transaction.ReferenceId.Value);
+            if (session is not null && session.Status != SessionStatus.Completed)
+            {
+                session.Status = SessionStatus.Cancelled;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+
+        return new AdminTransactionSummaryDto(
+            transaction.Id,
+            transaction.UserId,
+            transaction.User.Email,
+            transaction.Type,
+            transaction.Amount,
+            transaction.Currency,
+            transaction.PaymentMethod,
+            transaction.Status,
+            transaction.ReferenceId,
+            transaction.ExternalTransactionId,
+            transaction.CreatedAt,
+            transaction.FailureReason);
     }
 
     private static AdminReviewSummaryDto MapReview(Domain.Entities.Review review) => new(

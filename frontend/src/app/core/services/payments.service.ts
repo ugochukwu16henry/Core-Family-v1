@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { CheckoutSession, CreateCheckoutRequest, TransactionSummary } from '../models/payment.model';
+import { CheckoutSession, CreateCheckoutRequest, RequestRefundRequest, TransactionSummary } from '../models/payment.model';
 
 @Injectable({ providedIn: 'root' })
 export class PaymentsService {
@@ -19,5 +19,9 @@ export class PaymentsService {
 
   getMyTransactions(): Observable<TransactionSummary[]> {
     return this.http.get<TransactionSummary[]>(`${environment.apiUrl}/payments/me`);
+  }
+
+  requestRefund(transactionId: string, payload: RequestRefundRequest): Observable<TransactionSummary> {
+    return this.http.post<TransactionSummary>(`${environment.apiUrl}/payments/${transactionId}/refund-request`, payload);
   }
 }

@@ -15,6 +15,7 @@
         <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
         <a routerLink="/sessions" routerLinkActive="active" *ngIf="user()">Sessions</a>
         <a routerLink="/my-learning" routerLinkActive="active" *ngIf="user()">My Learning</a>
+        <a routerLink="/billing" routerLinkActive="active" *ngIf="user()">Billing</a>
         <a routerLink="/instructor/programs" routerLinkActive="active" *ngIf="user()?.role === 'Instructor'">Instructor Studio</a>
         <a routerLink="/auth/login" routerLinkActive="active" *ngIf="!user()">Login</a>
       </nav>

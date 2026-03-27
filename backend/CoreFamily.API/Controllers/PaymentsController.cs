@@ -28,6 +28,11 @@ public class PaymentsController : BaseApiController
     public async Task<IActionResult> GetMyTransactions()
         => Ok(await _payments.GetMyTransactionsAsync(GetCurrentUserId()));
 
+    [HttpPost("{transactionId:guid}/refund-request")]
+    [ProducesResponseType(typeof(TransactionSummaryDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RequestRefund(Guid transactionId, [FromBody] RequestRefundDto dto)
+        => Ok(await _payments.RequestRefundAsync(GetCurrentUserId(), transactionId, dto.Reason));
+
     [AllowAnonymous]
     [HttpPost("webhooks/{provider}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

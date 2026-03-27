@@ -132,9 +132,32 @@ Date: 2026-03-27
     - Cancel action
     - Reschedule form
     - Session and payment status visibility
+- Admin moderation workflow foundation is now operational:
+  - Backend admin API endpoints for:
+    - List users
+    - Suspend/reactivate users
+    - List flagged reviews
+    - Clear or restore review flags
+  - Blazor admin dashboard pages for:
+    - User moderation
+    - Flagged review moderation
+  - Admin dashboard now supports pasting an admin/moderator JWT to call protected backend moderation APIs
+- Refund and admin finance workflow foundation is now operational:
+  - User refund request API for signed-in users
+    - `POST /api/v1/payments/{transactionId}/refund-request`
+  - Backend admin finance API endpoints for:
+    - List transactions
+    - Refund a transaction
+  - Refunding a counseling transaction now cancels the linked session when it is still pending or confirmed
+  - Blazor admin dashboard finance page at `/finance` with:
+    - Transaction list loading
+    - Refund action submission with reason capture
+- User billing and refund request UI is now operational in Angular:
+  - Auth-protected billing route at `/billing`
+  - Transaction history list for signed-in users
+  - Per-transaction refund/dispute submission for completed payments
+  - Refund-request state visibility when a request is already submitted
 - Remaining major work:
   - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
-  - Refund/dispute management endpoints and admin workflows
-  - Admin workflows
   - AI counselor matching endpoint integration into "I need help" user flow
   - Expanded integration and E2E testing

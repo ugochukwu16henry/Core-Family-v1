@@ -46,6 +46,20 @@ public class AdminApiClient
         return await response.Content.ReadFromJsonAsync<AdminReviewSummary>();
     }
 
+    public async Task<IReadOnlyList<AdminTransactionSummary>> GetTransactionsAsync()
+    {
+        var client = CreateClient();
+        return await client.GetFromJsonAsync<IReadOnlyList<AdminTransactionSummary>>("admin/transactions") ?? [];
+    }
+
+    public async Task<AdminTransactionSummary?> RefundTransactionAsync(Guid transactionId, string reason)
+    {
+        var client = CreateClient();
+        var response = await client.PostAsJsonAsync($"admin/transactions/{transactionId}/refund", new RefundTransactionRequest(reason));
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<AdminTransactionSummary>();
+    }
+
     private HttpClient CreateClient()
     {
         var token = _sessionState.AccessToken;

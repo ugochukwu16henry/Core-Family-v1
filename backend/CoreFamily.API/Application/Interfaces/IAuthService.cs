@@ -58,6 +58,7 @@ public interface IPaymentService
     Task<IReadOnlyList<TransactionSummaryDto>> GetMyTransactionsAsync(Guid userId);
     Task<bool> HasCompletedProgramPaymentAsync(Guid userId, Guid programId);
     Task<bool> HasCompletedSessionPaymentAsync(Guid userId, Guid sessionId);
+    Task<TransactionSummaryDto> RequestRefundAsync(Guid userId, Guid transactionId, string reason);
 }
 
 public interface IAdminService
@@ -66,6 +67,8 @@ public interface IAdminService
     Task<AdminUserSummaryDto> SetUserActiveStatusAsync(Guid userId, bool isActive);
     Task<IReadOnlyList<AdminReviewSummaryDto>> GetFlaggedReviewsAsync();
     Task<AdminReviewSummaryDto> SetReviewFlagStatusAsync(Guid reviewId, bool isFlagged);
+    Task<IReadOnlyList<AdminTransactionSummaryDto>> GetTransactionsAsync();
+    Task<AdminTransactionSummaryDto> RefundTransactionAsync(Guid transactionId, string reason);
 }
 
 public interface ITokenService

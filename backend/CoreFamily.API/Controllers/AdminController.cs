@@ -29,8 +29,18 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetFlaggedReviews()
         => Ok(await _admin.GetFlaggedReviewsAsync());
 
+    [HttpGet("transactions")]
+    [ProducesResponseType(typeof(IReadOnlyList<AdminTransactionSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTransactions()
+        => Ok(await _admin.GetTransactionsAsync());
+
     [HttpPost("reviews/{reviewId:guid}/flag")]
     [ProducesResponseType(typeof(AdminReviewSummaryDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> SetReviewFlag(Guid reviewId, [FromBody] SetReviewFlagStatusDto dto)
         => Ok(await _admin.SetReviewFlagStatusAsync(reviewId, dto.IsFlagged));
+
+    [HttpPost("transactions/{transactionId:guid}/refund")]
+    [ProducesResponseType(typeof(AdminTransactionSummaryDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RefundTransaction(Guid transactionId, [FromBody] AdminRefundActionDto dto)
+        => Ok(await _admin.RefundTransactionAsync(transactionId, dto.Reason));
 }

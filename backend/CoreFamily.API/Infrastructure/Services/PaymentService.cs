@@ -165,17 +165,7 @@ public class PaymentService : IPaymentService
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        return transactions.Select(t => new TransactionSummaryDto(
-            t.Id,
-            t.Type,
-            t.Amount,
-            t.Currency,
-            t.PaymentMethod,
-            t.Status,
-            t.ReferenceId,
-            t.ExternalTransactionId,
-            t.CreatedAt,
-            t.FailureReason)).ToList();
+        return transactions.Select(MapTransactionSummary).ToList();
     }
 
     public async Task<bool> HasCompletedProgramPaymentAsync(Guid userId, Guid programId)
@@ -194,6 +184,22 @@ public class PaymentService : IPaymentService
             t.Type == TransactionType.CounselingSession &&
             t.ReferenceId == sessionId &&
             t.Status == TransactionStatus.Completed);
+    }
+
+    public async Task<TransactionSummaryDto> RequestRefundAsync(Guid userId, Guid transactionId, string reason)
+    {
+        var transaction = await _db.Transactions
+            .FirstOrDefaultAsync(t => t.Id == transactionId && t.UserId == userId)
+            ?? throw new KeyNotFoundException("Transaction not found.");
+
+        if (transaction.Status != TransactionStatus.Completed)
+            throw new InvalidOperationException("Only completed transactions can be submitted for refund or dispute review.");
+
+        var cleanReason = string.IsNullOrWhiteSpace(reason) ? "No reason provided." : reason.Trim();
+        transaction.FailureReason = $"REFUND_REQUESTED: {cleanReason}";
+        await _db.SaveChangesAsync();
+
+        return MapTransactionSummary(transaction);
     }
 
     private async Task<Transaction> CreatePendingTransactionAsync(
@@ -281,6 +287,18 @@ public class PaymentService : IPaymentService
         checkoutUrl,
         transaction.ExternalTransactionId,
         requiresRedirect);
+
+    internal static TransactionSummaryDto MapTransactionSummary(Transaction transaction) => new(
+        transaction.Id,
+        transaction.Type,
+        transaction.Amount,
+        transaction.Currency,
+        transaction.PaymentMethod,
+        transaction.Status,
+        transaction.ReferenceId,
+        transaction.ExternalTransactionId,
+        transaction.CreatedAt,
+        transaction.FailureReason);
 }
 
 public interface IPaymentGateway

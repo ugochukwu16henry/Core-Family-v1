@@ -29,3 +29,7 @@ export interface TransactionSummary {
   createdAt: string;
   failureReason?: string | null;
 }
+
+export interface RequestRefundRequest {
+  reason: string;
+}

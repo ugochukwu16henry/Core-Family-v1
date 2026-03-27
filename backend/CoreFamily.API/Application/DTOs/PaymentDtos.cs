@@ -34,6 +34,29 @@ public record TransactionSummaryDto(
     string? FailureReason
 );
 
+public record RequestRefundDto(
+    string Reason
+);
+
+public record AdminTransactionSummaryDto(
+    Guid Id,
+    Guid UserId,
+    string UserEmail,
+    TransactionType Type,
+    decimal Amount,
+    string Currency,
+    string PaymentMethod,
+    TransactionStatus Status,
+    Guid? ReferenceId,
+    string? ExternalTransactionId,
+    DateTime CreatedAt,
+    string? FailureReason
+);
+
+public record AdminRefundActionDto(
+    string Reason
+);
+
 public record PaymentWebhookDto(
     string ExternalTransactionId,
     string Status,

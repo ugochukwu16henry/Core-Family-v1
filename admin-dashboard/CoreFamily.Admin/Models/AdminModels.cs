@@ -27,5 +27,21 @@ public record AdminReviewSummary(
     DateTime CreatedAt
 );
 
+public record AdminTransactionSummary(
+    Guid Id,
+    Guid UserId,
+    string UserEmail,
+    string Type,
+    decimal Amount,
+    string Currency,
+    string PaymentMethod,
+    string Status,
+    Guid? ReferenceId,
+    string? ExternalTransactionId,
+    DateTime CreatedAt,
+    string? FailureReason
+);
+
 public record SetUserActiveStatusRequest(bool IsActive);
 public record SetReviewFlagStatusRequest(bool IsFlagged);
+public record RefundTransactionRequest(string Reason);
