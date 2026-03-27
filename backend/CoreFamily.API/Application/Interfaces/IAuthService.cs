@@ -26,7 +26,11 @@ public interface ICounselorService
     Task<CounselorSummaryDto> UpsertMyProfileAsync(Guid userId, CounselorProfileUpsertDto dto);
     Task<IReadOnlyList<SessionSummaryDto>> GetCounselorSessionsAsync(Guid userId);
     Task<IReadOnlyList<SessionSummaryDto>> GetClientSessionsAsync(Guid userId);
+    Task<SessionSummaryDto?> GetSessionByIdAsync(Guid userId, Guid sessionId);
     Task<SessionSummaryDto> BookSessionAsync(Guid clientUserId, BookSessionDto dto);
+    Task<SessionSummaryDto> ConfirmSessionAsync(Guid counselorUserId, Guid sessionId);
+    Task<SessionSummaryDto> CancelSessionAsync(Guid userId, Guid sessionId);
+    Task<SessionSummaryDto> RescheduleSessionAsync(Guid userId, Guid sessionId, RescheduleSessionDto dto);
 }
 
 public interface IProgramService
@@ -53,6 +57,7 @@ public interface IPaymentService
     Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string? signature);
     Task<IReadOnlyList<TransactionSummaryDto>> GetMyTransactionsAsync(Guid userId);
     Task<bool> HasCompletedProgramPaymentAsync(Guid userId, Guid programId);
+    Task<bool> HasCompletedSessionPaymentAsync(Guid userId, Guid sessionId);
 }
 
 public interface ITokenService

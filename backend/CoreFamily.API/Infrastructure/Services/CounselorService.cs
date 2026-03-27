@@ -11,8 +11,13 @@ public class CounselorService : ICounselorService
 {
     private const decimal PlatformCommissionRate = 0.05m;
     private readonly CoreFamilyDbContext _db;
+    private readonly IPaymentService _payments;
 
-    public CounselorService(CoreFamilyDbContext db) => _db = db;
+    public CounselorService(CoreFamilyDbContext db, IPaymentService payments)
+    {
+        _db = db;
+        _payments = payments;
+    }
 
     public async Task<IReadOnlyList<CounselorSummaryDto>> SearchAsync(CounselorSearchDto search)
     {
@@ -126,7 +131,7 @@ public class CounselorService : ICounselorService
             .OrderByDescending(s => s.ScheduledAt)
             .ToListAsync();
 
-        return sessions.Select(MapSessionSummary).ToList();
+        return await MapSessionSummariesAsync(sessions);
     }
 
     public async Task<IReadOnlyList<SessionSummaryDto>> GetClientSessionsAsync(Guid userId)
@@ -136,7 +141,24 @@ public class CounselorService : ICounselorService
             .OrderByDescending(s => s.ScheduledAt)
             .ToListAsync();
 
-        return sessions.Select(MapSessionSummary).ToList();
+        return await MapSessionSummariesAsync(sessions);
+    }
+
+    public async Task<SessionSummaryDto?> GetSessionByIdAsync(Guid userId, Guid sessionId)
+    {
+        var session = await QuerySessions().FirstOrDefaultAsync(s => s.Id == sessionId);
+        if (session is null)
+        {
+            return null;
+        }
+
+        var counselorUserId = session.Counselor.UserId;
+        if (session.ClientId != userId && counselorUserId != userId)
+        {
+            throw new UnauthorizedAccessException("You do not have access to this session.");
+        }
+
+        return await MapSessionSummaryAsync(session);
     }
 
     public async Task<SessionSummaryDto> BookSessionAsync(Guid clientUserId, BookSessionDto dto)
@@ -158,18 +180,7 @@ public class CounselorService : ICounselorService
             throw new InvalidOperationException("You cannot book a session with yourself.");
 
         var start = dto.ScheduledAt.ToUniversalTime();
-        var end = start.AddMinutes(dto.DurationMinutes);
-
-        var existingSessions = await _db.Sessions
-            .Where(s => s.CounselorId == counselor.Id && s.Status != SessionStatus.Cancelled)
-            .ToListAsync();
-
-        var hasConflict = existingSessions.Any(s =>
-        {
-            var existingStart = s.ScheduledAt;
-            var existingEnd = existingStart.AddMinutes(s.DurationMinutes);
-            return start < existingEnd && end > existingStart;
-        });
+        var hasConflict = await HasCounselorConflictAsync(counselor.Id, start, dto.DurationMinutes, null);
 
         if (hasConflict)
             throw new InvalidOperationException("The selected time conflicts with an existing counselor session.");
@@ -192,19 +203,71 @@ public class CounselorService : ICounselorService
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync();
 
-        return new SessionSummaryDto(
-            session.Id,
-            session.CounselorId,
-            session.ClientId,
-            BuildFullName(counselor.User.Profile?.FirstName, counselor.User.Profile?.LastName),
-            BuildFullName(client.Profile?.FirstName, client.Profile?.LastName),
-            session.ScheduledAt,
-            session.DurationMinutes,
-            session.Status.ToString(),
-            session.AmountPaid,
-            session.PlatformCommission,
-            session.Notes,
-            session.MeetingUrl);
+        return await MapSessionSummaryAsync(session);
+    }
+
+    public async Task<SessionSummaryDto> ConfirmSessionAsync(Guid counselorUserId, Guid sessionId)
+    {
+        var session = await QuerySessions().FirstOrDefaultAsync(s => s.Id == sessionId)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        if (session.Counselor.UserId != counselorUserId)
+            throw new UnauthorizedAccessException("Only the assigned counselor can confirm this session.");
+
+        if (session.Status is SessionStatus.Cancelled or SessionStatus.Completed)
+            throw new InvalidOperationException("This session can no longer be confirmed.");
+
+        if (session.AmountPaid > 0)
+        {
+            var isPaid = await _payments.HasCompletedSessionPaymentAsync(session.ClientId, session.Id);
+            if (!isPaid)
+                throw new InvalidOperationException("Payment must be completed before confirming this session.");
+        }
+
+        session.Status = SessionStatus.Confirmed;
+        await _db.SaveChangesAsync();
+        return await MapSessionSummaryAsync(session);
+    }
+
+    public async Task<SessionSummaryDto> CancelSessionAsync(Guid userId, Guid sessionId)
+    {
+        var session = await QuerySessions().FirstOrDefaultAsync(s => s.Id == sessionId)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        if (session.ClientId != userId && session.Counselor.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to cancel this session.");
+
+        if (session.Status is SessionStatus.Completed or SessionStatus.Cancelled)
+            throw new InvalidOperationException("This session cannot be cancelled.");
+
+        session.Status = SessionStatus.Cancelled;
+        await _db.SaveChangesAsync();
+        return await MapSessionSummaryAsync(session);
+    }
+
+    public async Task<SessionSummaryDto> RescheduleSessionAsync(Guid userId, Guid sessionId, RescheduleSessionDto dto)
+    {
+        var session = await QuerySessions().FirstOrDefaultAsync(s => s.Id == sessionId)
+            ?? throw new KeyNotFoundException("Session not found.");
+
+        if (session.ClientId != userId && session.Counselor.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to reschedule this session.");
+
+        if (session.Status is SessionStatus.Completed or SessionStatus.Cancelled)
+            throw new InvalidOperationException("This session cannot be rescheduled.");
+
+        var start = dto.ScheduledAt.ToUniversalTime();
+        var hasConflict = await HasCounselorConflictAsync(session.CounselorId, start, dto.DurationMinutes, session.Id);
+        if (hasConflict)
+            throw new InvalidOperationException("The selected time conflicts with an existing counselor session.");
+
+        session.ScheduledAt = start;
+        session.DurationMinutes = dto.DurationMinutes;
+        session.Notes = dto.Notes?.Trim();
+        session.Status = SessionStatus.Pending;
+
+        await _db.SaveChangesAsync();
+        return await MapSessionSummaryAsync(session);
     }
 
     private IQueryable<Session> QuerySessions() => _db.Sessions
@@ -235,7 +298,39 @@ public class CounselorService : ICounselorService
             ratings.Count);
     }
 
-    private static SessionSummaryDto MapSessionSummary(Session session) => new(
+    private async Task<IReadOnlyList<SessionSummaryDto>> MapSessionSummariesAsync(IReadOnlyList<Session> sessions)
+    {
+        if (sessions.Count == 0)
+            return [];
+
+        var sessionIds = sessions.Select(s => s.Id).ToArray();
+        var paidSessions = await _db.Transactions
+            .Where(t => t.Type == TransactionType.CounselingSession && t.ReferenceId.HasValue && sessionIds.Contains(t.ReferenceId.Value))
+            .GroupBy(t => t.ReferenceId!.Value)
+            .Select(g => new
+            {
+                SessionId = g.Key,
+                IsPaid = g.Any(x => x.Status == TransactionStatus.Completed),
+                PaymentStatus = g.OrderByDescending(x => x.CreatedAt).Select(x => x.Status).FirstOrDefault()
+            })
+            .ToDictionaryAsync(x => x.SessionId, x => (x.IsPaid, x.PaymentStatus.ToString()));
+
+        return sessions.Select(s => MapSessionSummary(s, paidSessions.TryGetValue(s.Id, out var p) ? p : (false, "Pending"))).ToList();
+    }
+
+    private async Task<SessionSummaryDto> MapSessionSummaryAsync(Session session)
+    {
+        var isPaid = await _payments.HasCompletedSessionPaymentAsync(session.ClientId, session.Id);
+        var paymentStatus = await _db.Transactions
+            .Where(t => t.Type == TransactionType.CounselingSession && t.ReferenceId == session.Id)
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => t.Status.ToString())
+            .FirstOrDefaultAsync() ?? (isPaid ? "Completed" : "Pending");
+
+        return MapSessionSummary(session, (isPaid, paymentStatus));
+    }
+
+    private static SessionSummaryDto MapSessionSummary(Session session, (bool IsPaid, string PaymentStatus) payment) => new(
         session.Id,
         session.CounselorId,
         session.ClientId,
@@ -246,8 +341,25 @@ public class CounselorService : ICounselorService
         session.Status.ToString(),
         session.AmountPaid,
         session.PlatformCommission,
+        payment.IsPaid,
+        payment.PaymentStatus,
         session.Notes,
         session.MeetingUrl);
+
+    private async Task<bool> HasCounselorConflictAsync(Guid counselorId, DateTime start, int durationMinutes, Guid? sessionToIgnore)
+    {
+        var end = start.AddMinutes(durationMinutes);
+        var existingSessions = await _db.Sessions
+            .Where(s => s.CounselorId == counselorId && s.Status != SessionStatus.Cancelled && (!sessionToIgnore.HasValue || s.Id != sessionToIgnore.Value))
+            .ToListAsync();
+
+        return existingSessions.Any(s =>
+        {
+            var existingStart = s.ScheduledAt;
+            var existingEnd = existingStart.AddMinutes(s.DurationMinutes);
+            return start < existingEnd && end > existingStart;
+        });
+    }
 
     private static string BuildFullName(string? firstName, string? lastName)
     {

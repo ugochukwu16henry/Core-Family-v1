@@ -94,6 +94,12 @@ public record BookSessionDto(
     string? Notes
 );
 
+public record RescheduleSessionDto(
+    DateTime ScheduledAt,
+    int DurationMinutes,
+    string? Notes
+);
+
 public record SessionSummaryDto(
     Guid Id,
     Guid CounselorId,
@@ -105,6 +111,8 @@ public record SessionSummaryDto(
     string Status,
     decimal AmountPaid,
     decimal PlatformCommission,
+    bool IsPaid,
+    string PaymentStatus,
     string? Notes,
     string? MeetingUrl
 );

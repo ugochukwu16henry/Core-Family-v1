@@ -80,6 +80,7 @@ public class PaymentService : IPaymentService
         if (session.AmountPaid <= 0)
         {
             transaction.Status = TransactionStatus.Completed;
+            session.Status = SessionStatus.Confirmed;
             await _db.SaveChangesAsync();
             return MapCheckoutDto(transaction, requiresRedirect: false, checkoutUrl: null);
         }
@@ -90,6 +91,11 @@ public class PaymentService : IPaymentService
         transaction.ExternalTransactionId = gatewayResult.ExternalTransactionId;
         transaction.InvoiceUrl = gatewayResult.CheckoutUrl;
         transaction.Status = gatewayResult.IsCompleted ? TransactionStatus.Completed : TransactionStatus.Pending;
+
+        if (transaction.Status == TransactionStatus.Completed)
+        {
+            session.Status = SessionStatus.Confirmed;
+        }
 
         await _db.SaveChangesAsync();
         return MapCheckoutDto(transaction, gatewayResult.RequiresRedirect, gatewayResult.CheckoutUrl);
@@ -133,6 +139,22 @@ public class PaymentService : IPaymentService
                 throw new ArgumentException("Unsupported webhook status.");
         }
 
+        if (transaction.Type == TransactionType.CounselingSession && transaction.ReferenceId.HasValue)
+        {
+            var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == transaction.ReferenceId.Value);
+            if (session is not null)
+            {
+                if (transaction.Status == TransactionStatus.Completed)
+                {
+                    session.Status = SessionStatus.Confirmed;
+                }
+                else if (transaction.Status == TransactionStatus.Refunded && session.Status != SessionStatus.Completed)
+                {
+                    session.Status = SessionStatus.Cancelled;
+                }
+            }
+        }
+
         await _db.SaveChangesAsync();
     }
 
@@ -162,6 +184,15 @@ public class PaymentService : IPaymentService
             t.UserId == userId &&
             t.Type == TransactionType.ProgramEnrollment &&
             t.ReferenceId == programId &&
+            t.Status == TransactionStatus.Completed);
+    }
+
+    public async Task<bool> HasCompletedSessionPaymentAsync(Guid userId, Guid sessionId)
+    {
+        return await _db.Transactions.AnyAsync(t =>
+            t.UserId == userId &&
+            t.Type == TransactionType.CounselingSession &&
+            t.ReferenceId == sessionId &&
             t.Status == TransactionStatus.Completed);
     }
 

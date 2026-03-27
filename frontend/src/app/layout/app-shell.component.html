@@ -13,6 +13,7 @@
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
         <a routerLink="/programs" routerLinkActive="active">Programs</a>
         <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a routerLink="/sessions" routerLinkActive="active" *ngIf="user()">Sessions</a>
         <a routerLink="/my-learning" routerLinkActive="active" *ngIf="user()">My Learning</a>
         <a routerLink="/instructor/programs" routerLinkActive="active" *ngIf="user()?.role === 'Instructor'">Instructor Studio</a>
         <a routerLink="/auth/login" routerLinkActive="active" *ngIf="!user()">Login</a>
