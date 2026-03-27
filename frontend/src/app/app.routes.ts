@@ -27,6 +27,11 @@ export const routes: Routes = [
 				path: 'my-learning',
 				canActivate: [authGuard],
 				loadComponent: () => import('./features/programs/my-learning.component').then((m) => m.MyLearningComponent)
+			},
+			{
+				path: 'instructor/programs',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/instructor/instructor-programs.component').then((m) => m.InstructorProgramsComponent)
 			}
 		]
 	},

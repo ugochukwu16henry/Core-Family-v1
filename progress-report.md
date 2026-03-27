@@ -93,11 +93,24 @@ Date: 2026-03-27
     - `POST /api/v1/payments/webhooks/{provider}`
   - Program enrollment now enforces payment completion for paid programs
   - Angular program enrollment now routes paid enrollments through checkout flow first
+- Instructor publishing workflow foundation is now operational:
+  - Instructor-only API set for program management:
+    - List my programs
+    - Create draft program
+    - Update program
+    - Publish program
+  - Instructor-only API set for lesson management:
+    - Add lesson with linked content payload
+    - Update lesson and linked content
+  - Angular Instructor Studio page at `/instructor/programs` with:
+    - Draft program creation
+    - Program publish action
+    - Instructor-only navigation visibility
 - Remaining major work:
-  - Instructor program publishing workflow
   - Lesson player and progress updates from content consumption
   - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
   - Refund/dispute management endpoints and admin workflows
-  - Counselor booking flow
+  - Counselor booking lifecycle hardening (availability management, confirmation, cancellation/reschedule, payment-state coupling)
   - Admin workflows
+  - AI counselor matching endpoint integration into "I need help" user flow
   - Expanded integration and E2E testing

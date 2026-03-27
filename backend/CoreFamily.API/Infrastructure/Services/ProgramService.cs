@@ -1,6 +1,7 @@
 using CoreFamily.API.Application.DTOs;
 using CoreFamily.API.Application.Interfaces;
 using CoreFamily.API.Domain.Entities;
+using CoreFamily.API.Domain.Enums;
 using CoreFamily.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -155,6 +156,208 @@ public class ProgramService : IProgramService
             e.Program.Lessons.Count,
             completedByProgram.TryGetValue(e.ProgramId, out var done) ? done : 0
         )).ToList();
+    }
+
+    public async Task<IReadOnlyList<InstructorProgramSummaryDto>> GetMyProgramsAsync(Guid instructorUserId)
+    {
+        await EnsureInstructorAsync(instructorUserId);
+
+        var programs = await _db.Programs
+            .Include(p => p.Lessons)
+            .Where(p => p.InstructorId == instructorUserId)
+            .OrderByDescending(p => p.UpdatedAt)
+            .ToListAsync();
+
+        return programs.Select(p => new InstructorProgramSummaryDto(
+            p.Id,
+            p.Title,
+            p.Description,
+            p.Price,
+            p.DurationWeeks,
+            p.Category,
+            p.IsPublished,
+            p.Lessons.Count,
+            p.UpdatedAt
+        )).ToList();
+    }
+
+    public async Task<InstructorProgramSummaryDto> CreateProgramAsync(Guid instructorUserId, InstructorProgramUpsertDto dto)
+    {
+        await EnsureInstructorAsync(instructorUserId);
+
+        var program = new Program_
+        {
+            Title = dto.Title.Trim(),
+            Description = dto.Description.Trim(),
+            Price = dto.Price,
+            DurationWeeks = dto.DurationWeeks,
+            Category = dto.Category,
+            InstructorId = instructorUserId,
+            IsPublished = false
+        };
+
+        _db.Programs.Add(program);
+        await _db.SaveChangesAsync();
+
+        return new InstructorProgramSummaryDto(
+            program.Id,
+            program.Title,
+            program.Description,
+            program.Price,
+            program.DurationWeeks,
+            program.Category,
+            program.IsPublished,
+            0,
+            program.UpdatedAt);
+    }
+
+    public async Task<InstructorProgramSummaryDto> UpdateProgramAsync(Guid instructorUserId, Guid programId, InstructorProgramUpsertDto dto)
+    {
+        var program = await GetOwnedProgramAsync(instructorUserId, programId);
+
+        program.Title = dto.Title.Trim();
+        program.Description = dto.Description.Trim();
+        program.Price = dto.Price;
+        program.DurationWeeks = dto.DurationWeeks;
+        program.Category = dto.Category;
+
+        await _db.SaveChangesAsync();
+
+        var lessonCount = await _db.Lessons.CountAsync(l => l.ProgramId == programId);
+        return new InstructorProgramSummaryDto(
+            program.Id,
+            program.Title,
+            program.Description,
+            program.Price,
+            program.DurationWeeks,
+            program.Category,
+            program.IsPublished,
+            lessonCount,
+            program.UpdatedAt);
+    }
+
+    public async Task<InstructorProgramSummaryDto> PublishProgramAsync(Guid instructorUserId, Guid programId)
+    {
+        var program = await GetOwnedProgramAsync(instructorUserId, programId);
+        var lessonCount = await _db.Lessons.CountAsync(l => l.ProgramId == programId);
+
+        if (lessonCount == 0)
+        {
+            throw new InvalidOperationException("A program must contain at least one lesson before publishing.");
+        }
+
+        program.IsPublished = true;
+        await _db.SaveChangesAsync();
+
+        return new InstructorProgramSummaryDto(
+            program.Id,
+            program.Title,
+            program.Description,
+            program.Price,
+            program.DurationWeeks,
+            program.Category,
+            program.IsPublished,
+            lessonCount,
+            program.UpdatedAt);
+    }
+
+    public async Task<InstructorLessonSummaryDto> AddLessonAsync(Guid instructorUserId, Guid programId, InstructorLessonUpsertDto dto)
+    {
+        var program = await GetOwnedProgramAsync(instructorUserId, programId);
+
+        var slugBase = $"{program.Title}-{dto.ContentTitle}-{Guid.NewGuid():N}".ToLowerInvariant().Replace(' ', '-');
+        var content = new Content
+        {
+            Title = dto.ContentTitle.Trim(),
+            Slug = slugBase,
+            Description = dto.ContentDescription?.Trim(),
+            Body = dto.ContentBody,
+            Type = dto.ContentType,
+            Category = program.Category,
+            IsFree = dto.IsFree,
+            Price = dto.IsFree ? 0 : dto.Price,
+            ThumbnailUrl = dto.ThumbnailUrl,
+            CreatedById = instructorUserId,
+            IsPublished = true
+        };
+
+        var lesson = new Lesson
+        {
+            ProgramId = programId,
+            Title = dto.Title.Trim(),
+            OrderIndex = dto.OrderIndex,
+            Content = content,
+            IsRequired = dto.IsRequired
+        };
+
+        _db.Lessons.Add(lesson);
+        await _db.SaveChangesAsync();
+
+        return new InstructorLessonSummaryDto(
+            lesson.Id,
+            lesson.ProgramId,
+            lesson.ContentId,
+            lesson.Title,
+            lesson.OrderIndex,
+            lesson.IsRequired,
+            content.Type,
+            content.IsFree,
+            content.Price,
+            content.IsPublished);
+    }
+
+    public async Task<InstructorLessonSummaryDto> UpdateLessonAsync(Guid instructorUserId, Guid programId, Guid lessonId, InstructorLessonUpsertDto dto)
+    {
+        await GetOwnedProgramAsync(instructorUserId, programId);
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Content)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.ProgramId == programId)
+            ?? throw new KeyNotFoundException("Lesson not found.");
+
+        lesson.Title = dto.Title.Trim();
+        lesson.OrderIndex = dto.OrderIndex;
+        lesson.IsRequired = dto.IsRequired;
+
+        lesson.Content.Title = dto.ContentTitle.Trim();
+        lesson.Content.Description = dto.ContentDescription?.Trim();
+        lesson.Content.Body = dto.ContentBody;
+        lesson.Content.Type = dto.ContentType;
+        lesson.Content.IsFree = dto.IsFree;
+        lesson.Content.Price = dto.IsFree ? 0 : dto.Price;
+        lesson.Content.ThumbnailUrl = dto.ThumbnailUrl;
+
+        await _db.SaveChangesAsync();
+
+        return new InstructorLessonSummaryDto(
+            lesson.Id,
+            lesson.ProgramId,
+            lesson.ContentId,
+            lesson.Title,
+            lesson.OrderIndex,
+            lesson.IsRequired,
+            lesson.Content.Type,
+            lesson.Content.IsFree,
+            lesson.Content.Price,
+            lesson.Content.IsPublished);
+    }
+
+    private async Task EnsureInstructorAsync(Guid instructorUserId)
+    {
+        var isInstructor = await _db.UserRoles.AnyAsync(r => r.UserId == instructorUserId && r.Role == UserRole.Instructor);
+        if (!isInstructor)
+        {
+            throw new UnauthorizedAccessException("Only instructor accounts can manage programs.");
+        }
+    }
+
+    private async Task<Program_> GetOwnedProgramAsync(Guid instructorUserId, Guid programId)
+    {
+        await EnsureInstructorAsync(instructorUserId);
+
+        return await _db.Programs
+            .FirstOrDefaultAsync(p => p.Id == programId && p.InstructorId == instructorUserId)
+            ?? throw new KeyNotFoundException("Program not found for this instructor.");
     }
 
     private static ProgramSummaryDto MapProgramSummary(Program_ program) => new(
