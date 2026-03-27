@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { EMPTY, switchMap } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 import { PaymentsService } from '../../core/services/payments.service';
@@ -60,7 +60,8 @@ export class ProgramsComponent {
       switchMap((checkout) => {
         if (checkout.requiresRedirect && checkout.checkoutUrl) {
           window.location.assign(checkout.checkoutUrl);
-          throw new Error('Redirecting to payment provider...');
+          this.actionInProgress.set(false);
+          return EMPTY;
         }
 
         if (checkout.status !== 'Completed') {

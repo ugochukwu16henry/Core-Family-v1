@@ -83,10 +83,21 @@ Date: 2026-03-27
   - My enrollments API (`GET /api/v1/programs/me/enrollments`)
   - Angular Programs page (`/programs`)
   - Angular My Learning page (`/my-learning`)
+- Payment and monetization foundation is now operational:
+  - Payment checkout APIs for program and session payments
+    - `POST /api/v1/payments/checkout/program/{programId}`
+    - `POST /api/v1/payments/checkout/session/{sessionId}`
+  - Transactions API for signed-in users
+    - `GET /api/v1/payments/me`
+  - Webhook ingestion endpoint
+    - `POST /api/v1/payments/webhooks/{provider}`
+  - Program enrollment now enforces payment completion for paid programs
+  - Angular program enrollment now routes paid enrollments through checkout flow first
 - Remaining major work:
   - Instructor program publishing workflow
   - Lesson player and progress updates from content consumption
-  - Payments integration
+  - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
+  - Refund/dispute management endpoints and admin workflows
   - Counselor booking flow
   - Admin workflows
   - Expanded integration and E2E testing
