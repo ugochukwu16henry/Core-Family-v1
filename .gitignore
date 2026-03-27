@@ -18,6 +18,8 @@ artifacts/
 *.snupkg
 **/TestResults/
 .env
+.env.local
+.env.*.local
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
@@ -32,6 +34,7 @@ frontend/.sass-cache/
 frontend/npm-debug.log
 frontend/yarn-error.log
 frontend/.env
+frontend/.env.local
 frontend/coverage/
 
 # ========================

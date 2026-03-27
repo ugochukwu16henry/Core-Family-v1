@@ -62,7 +62,25 @@ Core-Family-v1/
 docker-compose up postgres redis -d
 ```
 
-### 2. Run the API
+### 2. Start API and frontend with local env auto-loading
+
+From the repository root:
+
+```powershell
+# Terminal 1
+./scripts/start-api-local.ps1
+
+# Terminal 2
+./scripts/start-frontend-local.ps1
+```
+
+These scripts automatically:
+
+- load variables from `.env.local`
+- pass env values to ASP.NET Core
+- sync Angular `frontend/src/environments/environment.development.ts` from `CORE_FAMILY_API_URL`
+
+### 3. Run the API (manual)
 
 ```bash
 cd backend/CoreFamily.API
@@ -71,7 +89,7 @@ dotnet run
 # Swagger UI: http://localhost:5000/swagger
 ```
 
-### 3. Run the Angular frontend
+### 4. Run the Angular frontend (manual)
 
 ```bash
 cd frontend
@@ -80,7 +98,7 @@ ng serve
 # App available at: http://localhost:4200
 ```
 
-### 4. Run the Blazor Admin
+### 5. Run the Blazor Admin
 
 ```bash
 cd admin-dashboard/CoreFamily.Admin
@@ -92,7 +110,7 @@ dotnet run
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in values. **Never commit `.env` files.**
+Use `.env.local` for your machine-specific values. **Never commit local env files.**
 
 See `/docs/environment-setup.md` for full configuration guide.
 
