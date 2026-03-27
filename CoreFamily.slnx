@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/admin-dashboard/">
+    <Project Path="admin-dashboard/CoreFamily.Admin/CoreFamily.Admin.csproj" />
+  </Folder>
+  <Folder Name="/backend/">
+    <Project Path="backend/CoreFamily.API/CoreFamily.API.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: corefamily-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: corefamily
+      POSTGRES_PASSWORD: CoreFamily@Dev2026
+      POSTGRES_DB: corefamilydb
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U corefamily -d corefamilydb']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: corefamily-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend/CoreFamily.API
+      dockerfile: Dockerfile
+    container_name: corefamily-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: 'Host=postgres;Port=5432;Database=corefamilydb;Username=corefamily;Password=CoreFamily@Dev2026'
+      ConnectionStrings__Redis: 'redis:6379'
+      Jwt__Key: 'CoreFamilyDevelopmentJwtKey-Replace-In-Production-Min32Chars!'
+      Jwt__Issuer: 'https://api.corefamily.com'
+      Jwt__Audience: 'https://corefamily.com'
+    ports:
+      - '5000:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: ./admin-dashboard/CoreFamily.Admin
+      dockerfile: Dockerfile
+    container_name: corefamily-admin
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ApiBaseUrl: 'http://api:8080'
+    ports:
+      - '5001:8080'
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
