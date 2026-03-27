@@ -106,8 +106,19 @@ Date: 2026-03-27
     - Draft program creation
     - Program publish action
     - Instructor-only navigation visibility
+- Lesson player and progress tracking foundation is now operational:
+  - Learning program overview API
+    - `GET /api/v1/programs/{programId}/learn`
+  - Lesson player API
+    - `GET /api/v1/programs/{programId}/lessons/{lessonId}`
+  - Lesson progress update API
+    - `POST /api/v1/programs/{programId}/lessons/{lessonId}/progress`
+  - Enrollment completion is automatically set when all lessons are completed
+  - Angular learning pages:
+    - Program learning overview page
+    - Lesson player page
+    - Continue-learning links from My Learning
 - Remaining major work:
-  - Lesson player and progress updates from content consumption
   - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
   - Refund/dispute management endpoints and admin workflows
   - Counselor booking lifecycle hardening (availability management, confirmation, cancellation/reschedule, payment-state coupling)

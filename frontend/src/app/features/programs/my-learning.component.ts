@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { ProgramsService } from '../../core/services/programs.service';
 import { EnrollmentSummary } from '../../core/models/program.model';
@@ -7,7 +8,7 @@ import { EnrollmentSummary } from '../../core/models/program.model';
 @Component({
   selector: 'app-my-learning',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './my-learning.component.html',
   styleUrl: './my-learning.component.scss'
 })

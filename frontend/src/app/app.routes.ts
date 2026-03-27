@@ -19,6 +19,16 @@ export const routes: Routes = [
 				loadComponent: () => import('./features/programs/programs.component').then((m) => m.ProgramsComponent)
 			},
 			{
+				path: 'programs/:programId/learn',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/programs/learning-program.component').then((m) => m.LearningProgramComponent)
+			},
+			{
+				path: 'programs/:programId/lessons/:lessonId',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/programs/lesson-player.component').then((m) => m.LessonPlayerComponent)
+			},
+			{
 				path: 'dashboard',
 				canActivate: [authGuard],
 				loadComponent: () => import('./features/home/dashboard.component').then((m) => m.DashboardComponent)

@@ -15,6 +15,7 @@
       <p>{{ enrollment.completedLessons }} / {{ enrollment.totalLessons }} lessons completed</p>
       <p *ngIf="enrollment.completedAt">Completed: {{ enrollment.completedAt | date:'mediumDate' }}</p>
       <p *ngIf="!enrollment.completedAt">Status: In progress</p>
+      <a class="button-primary" [routerLink]="['/programs', enrollment.programId, 'learn']">Continue learning</a>
     </article>
   </div>
 
