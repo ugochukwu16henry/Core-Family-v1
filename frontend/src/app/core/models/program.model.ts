@@ -19,6 +19,23 @@ export interface LessonSummary {
   price: number;
 }
 
+export interface LessonPlayer {
+  lessonId: string;
+  programId: string;
+  contentId: string;
+  title: string;
+  orderIndex: number;
+  isRequired: boolean;
+  contentTitle?: string | null;
+  contentDescription?: string | null;
+  contentBody?: string | null;
+  contentType: string;
+  isFree: boolean;
+  price: number;
+  secondsWatched: number;
+  completedAt?: string | null;
+}
+
 export interface ProgramDetail {
   id: string;
   title: string;
@@ -39,4 +56,19 @@ export interface EnrollmentSummary {
   completedAt?: string | null;
   totalLessons: number;
   completedLessons: number;
+}
+
+export interface ProgramLearning {
+  programId: string;
+  programTitle: string;
+  enrolledAt: string;
+  completedAt?: string | null;
+  totalLessons: number;
+  completedLessons: number;
+  lessons: LessonPlayer[];
+}
+
+export interface UpdateLessonProgressRequest {
+  secondsWatched: number;
+  markCompleted: boolean;
 }

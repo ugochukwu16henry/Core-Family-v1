@@ -50,3 +50,35 @@ public record EnrollmentSummaryDto(
     int TotalLessons,
     int CompletedLessons
 );
+
+public record LessonPlayerDto(
+    Guid LessonId,
+    Guid ProgramId,
+    Guid ContentId,
+    string Title,
+    int OrderIndex,
+    bool IsRequired,
+    string? ContentTitle,
+    string? ContentDescription,
+    string? ContentBody,
+    string ContentType,
+    bool IsFree,
+    decimal Price,
+    int SecondsWatched,
+    DateTime? CompletedAt
+);
+
+public record ProgramLearningDto(
+    Guid ProgramId,
+    string ProgramTitle,
+    DateTime EnrolledAt,
+    DateTime? CompletedAt,
+    int TotalLessons,
+    int CompletedLessons,
+    IReadOnlyList<LessonPlayerDto> Lessons
+);
+
+public record UpdateLessonProgressDto(
+    int SecondsWatched,
+    bool MarkCompleted
+);

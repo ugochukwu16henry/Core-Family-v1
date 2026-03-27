@@ -44,6 +44,24 @@ public class ProgramsController : BaseApiController
     public async Task<IActionResult> GetMyEnrollments()
         => Ok(await _programs.GetMyEnrollmentsAsync(GetCurrentUserId()));
 
+    [Authorize]
+    [HttpGet("{id:guid}/learn")]
+    [ProducesResponseType(typeof(ProgramLearningDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLearningProgram(Guid id)
+        => Ok(await _programs.GetLearningProgramAsync(GetCurrentUserId(), id));
+
+    [Authorize]
+    [HttpGet("{programId:guid}/lessons/{lessonId:guid}")]
+    [ProducesResponseType(typeof(LessonPlayerDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLesson(Guid programId, Guid lessonId)
+        => Ok(await _programs.GetLessonAsync(GetCurrentUserId(), programId, lessonId));
+
+    [Authorize]
+    [HttpPost("{programId:guid}/lessons/{lessonId:guid}/progress")]
+    [ProducesResponseType(typeof(LessonPlayerDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateLessonProgress(Guid programId, Guid lessonId, [FromBody] UpdateLessonProgressDto dto)
+        => Ok(await _programs.UpdateLessonProgressAsync(GetCurrentUserId(), programId, lessonId, dto));
+
     private Guid GetCurrentUserId()
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)

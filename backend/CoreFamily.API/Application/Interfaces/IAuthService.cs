@@ -35,6 +35,9 @@ public interface IProgramService
     Task<ProgramDetailDto?> GetPublishedProgramByIdAsync(Guid programId);
     Task<EnrollmentSummaryDto> EnrollAsync(Guid userId, Guid programId);
     Task<IReadOnlyList<EnrollmentSummaryDto>> GetMyEnrollmentsAsync(Guid userId);
+    Task<ProgramLearningDto> GetLearningProgramAsync(Guid userId, Guid programId);
+    Task<LessonPlayerDto> GetLessonAsync(Guid userId, Guid programId, Guid lessonId);
+    Task<LessonPlayerDto> UpdateLessonProgressAsync(Guid userId, Guid programId, Guid lessonId, UpdateLessonProgressDto dto);
     Task<IReadOnlyList<InstructorProgramSummaryDto>> GetMyProgramsAsync(Guid instructorUserId);
     Task<InstructorProgramSummaryDto> CreateProgramAsync(Guid instructorUserId, InstructorProgramUpsertDto dto);
     Task<InstructorProgramSummaryDto> UpdateProgramAsync(Guid instructorUserId, Guid programId, InstructorProgramUpsertDto dto);

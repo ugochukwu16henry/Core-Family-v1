@@ -1,0 +1,39 @@
+.learning-program {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.lesson-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lesson-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status {
+  background: #ffe3b3;
+  color: #8a5700;
+  border-radius: 99px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.status.done {
+  background: #d7f5df;
+  color: #116329;
+}
+
+.feedback.error {
+  color: #c92a2a;
+}

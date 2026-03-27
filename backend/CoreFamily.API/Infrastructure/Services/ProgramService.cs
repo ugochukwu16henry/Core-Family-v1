@@ -158,6 +158,89 @@ public class ProgramService : IProgramService
         )).ToList();
     }
 
+    public async Task<ProgramLearningDto> GetLearningProgramAsync(Guid userId, Guid programId)
+    {
+        var enrollment = await _db.Enrollments
+            .Include(e => e.Program).ThenInclude(p => p.Lessons).ThenInclude(l => l.Content)
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.ProgramId == programId)
+            ?? throw new KeyNotFoundException("Enrollment not found for this program.");
+
+        var progressEntries = await _db.ProgressEntries
+            .Where(pe => pe.UserId == userId)
+            .ToDictionaryAsync(pe => pe.ContentId, pe => pe);
+
+        var lessons = enrollment.Program.Lessons
+            .OrderBy(l => l.OrderIndex)
+            .Select(l => MapLessonPlayer(l, progressEntries.TryGetValue(l.ContentId, out var progress) ? progress : null))
+            .ToList();
+
+        var completedLessons = lessons.Count(l => l.CompletedAt != null);
+
+        if (completedLessons == lessons.Count && lessons.Count > 0 && enrollment.CompletedAt is null)
+        {
+            enrollment.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+
+        return new ProgramLearningDto(
+            enrollment.ProgramId,
+            enrollment.Program.Title,
+            enrollment.EnrolledAt,
+            enrollment.CompletedAt,
+            lessons.Count,
+            completedLessons,
+            lessons);
+    }
+
+    public async Task<LessonPlayerDto> GetLessonAsync(Guid userId, Guid programId, Guid lessonId)
+    {
+        await EnsureEnrollmentAsync(userId, programId);
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Content)
+            .FirstOrDefaultAsync(l => l.ProgramId == programId && l.Id == lessonId)
+            ?? throw new KeyNotFoundException("Lesson not found.");
+
+        var progress = await _db.ProgressEntries
+            .FirstOrDefaultAsync(pe => pe.UserId == userId && pe.ContentId == lesson.ContentId);
+
+        return MapLessonPlayer(lesson, progress);
+    }
+
+    public async Task<LessonPlayerDto> UpdateLessonProgressAsync(Guid userId, Guid programId, Guid lessonId, UpdateLessonProgressDto dto)
+    {
+        await EnsureEnrollmentAsync(userId, programId);
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Content)
+            .FirstOrDefaultAsync(l => l.ProgramId == programId && l.Id == lessonId)
+            ?? throw new KeyNotFoundException("Lesson not found.");
+
+        var progress = await _db.ProgressEntries
+            .FirstOrDefaultAsync(pe => pe.UserId == userId && pe.ContentId == lesson.ContentId);
+
+        if (progress is null)
+        {
+            progress = new ProgressEntry
+            {
+                UserId = userId,
+                ContentId = lesson.ContentId
+            };
+            _db.ProgressEntries.Add(progress);
+        }
+
+        progress.SecondsWatched = Math.Max(progress.SecondsWatched, dto.SecondsWatched);
+        if (dto.MarkCompleted)
+        {
+            progress.CompletedAt = progress.CompletedAt ?? DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+
+        await UpdateEnrollmentCompletionIfNeeded(userId, programId);
+        return MapLessonPlayer(lesson, progress);
+    }
+
     public async Task<IReadOnlyList<InstructorProgramSummaryDto>> GetMyProgramsAsync(Guid instructorUserId)
     {
         await EnsureInstructorAsync(instructorUserId);
@@ -359,6 +442,61 @@ public class ProgramService : IProgramService
             .FirstOrDefaultAsync(p => p.Id == programId && p.InstructorId == instructorUserId)
             ?? throw new KeyNotFoundException("Program not found for this instructor.");
     }
+
+    private async Task EnsureEnrollmentAsync(Guid userId, Guid programId)
+    {
+        var isEnrolled = await _db.Enrollments.AnyAsync(e => e.UserId == userId && e.ProgramId == programId);
+        if (!isEnrolled)
+        {
+            throw new UnauthorizedAccessException("You must be enrolled in this program to access lessons.");
+        }
+    }
+
+    private async Task UpdateEnrollmentCompletionIfNeeded(Guid userId, Guid programId)
+    {
+        var enrollment = await _db.Enrollments
+            .Include(e => e.Program).ThenInclude(p => p.Lessons)
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.ProgramId == programId);
+
+        if (enrollment is null)
+        {
+            return;
+        }
+
+        var lessonContentIds = enrollment.Program.Lessons.Select(l => l.ContentId).ToArray();
+        if (lessonContentIds.Length == 0)
+        {
+            return;
+        }
+
+        var completedCount = await _db.ProgressEntries
+            .Where(pe => pe.UserId == userId && pe.CompletedAt != null && lessonContentIds.Contains(pe.ContentId))
+            .Select(pe => pe.ContentId)
+            .Distinct()
+            .CountAsync();
+
+        if (completedCount == lessonContentIds.Length && enrollment.CompletedAt is null)
+        {
+            enrollment.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    private static LessonPlayerDto MapLessonPlayer(Lesson lesson, ProgressEntry? progress) => new(
+        lesson.Id,
+        lesson.ProgramId,
+        lesson.ContentId,
+        lesson.Title,
+        lesson.OrderIndex,
+        lesson.IsRequired,
+        lesson.Content.Title,
+        lesson.Content.Description,
+        lesson.Content.Body,
+        lesson.Content.Type.ToString(),
+        lesson.Content.IsFree,
+        lesson.Content.Price,
+        progress?.SecondsWatched ?? 0,
+        progress?.CompletedAt);
 
     private static ProgramSummaryDto MapProgramSummary(Program_ program) => new(
         program.Id,
