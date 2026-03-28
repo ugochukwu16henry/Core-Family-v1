@@ -78,7 +78,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "completed",
             null,
             null
@@ -109,7 +109,7 @@ public class PaymentWebhookIntegrationTests
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
             await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-                transaction.ExternalTransactionId,
+                transaction.ExternalTransactionId!,
                 "completed",
                 null,
                 null
@@ -139,7 +139,7 @@ public class PaymentWebhookIntegrationTests
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
             await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-                transaction.ExternalTransactionId,
+                transaction.ExternalTransactionId!,
                 "completed",
                 null,
                 null
@@ -175,7 +175,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("paystack", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "success",
             null,
             null
@@ -205,7 +205,7 @@ public class PaymentWebhookIntegrationTests
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
             await _paymentService.HandleWebhookAsync("paystack", new PaymentWebhookDto(
-                transaction.ExternalTransactionId,
+                transaction.ExternalTransactionId!,
                 "success",
                 null,
                 null
@@ -233,7 +233,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             webhookStatus,
             null,
             null
@@ -243,7 +243,7 @@ public class PaymentWebhookIntegrationTests
         var updatedTransaction = await _dbContext.Transactions
             .FirstOrDefaultAsync(t => t.Id == transaction.Id);
 
-        Assert.Equal(expectedStatus, updatedTransaction.Status);
+        Assert.Equal(expectedStatus, updatedTransaction!.Status);
         Assert.Null(updatedTransaction.FailureReason);
     }
 
@@ -261,7 +261,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             webhookStatus,
             "Card declined",
             null
@@ -271,7 +271,7 @@ public class PaymentWebhookIntegrationTests
         var updatedTransaction = await _dbContext.Transactions
             .FirstOrDefaultAsync(t => t.Id == transaction.Id);
 
-        Assert.Equal(TransactionStatus.Failed, updatedTransaction.Status);
+        Assert.Equal(TransactionStatus.Failed, updatedTransaction!.Status);
         Assert.Equal("Card declined", updatedTransaction.FailureReason);
     }
 
@@ -290,7 +290,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "refunded",
             "Customer requested refund",
             null
@@ -300,7 +300,7 @@ public class PaymentWebhookIntegrationTests
         var updatedTransaction = await _dbContext.Transactions
             .FirstOrDefaultAsync(t => t.Id == transaction.Id);
 
-        Assert.Equal(TransactionStatus.Refunded, updatedTransaction.Status);
+        Assert.Equal(TransactionStatus.Refunded, updatedTransaction!.Status);
         Assert.Equal("Customer requested refund", updatedTransaction.FailureReason);
     }
 
@@ -348,7 +348,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "completed",
             null,
             null
@@ -401,7 +401,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "refunded",
             "Customer requested refund",
             null
@@ -440,7 +440,7 @@ public class PaymentWebhookIntegrationTests
     public async Task HandleWebhook_NoWebhookSecretConfigured_AllowsWebhook()
     {
         // Arrange - No webhook secret configured (allows in dev environments)
-        _configurationMock.Setup(c => c["Stripe:WebhookSecret"]).Returns((string)null);
+        _configurationMock.Setup(c => c["Stripe:WebhookSecret"]).Returns((string?)null);
 
         var transaction = CreateTransaction(_testUser.Id, "stripe", "ch_test_007");
         var payload = new { type = "checkout.session.completed" };
@@ -448,7 +448,7 @@ public class PaymentWebhookIntegrationTests
 
         // Act - Should not throw even though signature is invalid/empty
         await _paymentService.HandleWebhookAsync("stripe", new PaymentWebhookDto(
-            transaction.ExternalTransactionId,
+            transaction.ExternalTransactionId!,
             "completed",
             null,
             null
@@ -457,7 +457,7 @@ public class PaymentWebhookIntegrationTests
         // Assert
         var updatedTransaction = await _dbContext.Transactions
             .FirstOrDefaultAsync(t => t.Id == transaction.Id);
-        Assert.Equal(TransactionStatus.Completed, updatedTransaction.Status);
+        Assert.Equal(TransactionStatus.Completed, updatedTransaction!.Status);
     }
 
     #endregion

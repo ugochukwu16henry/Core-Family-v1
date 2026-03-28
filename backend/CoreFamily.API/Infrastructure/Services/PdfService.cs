@@ -157,6 +157,7 @@ public class PdfService : IPdfService
             .SetTextAlignment(TextAlignment.CENTER)
             .SetMarginBottom(4));
 
+        document.Close();
         return stream.ToArray();
     }
 
@@ -233,6 +234,7 @@ public class PdfService : IPdfService
             }
         }
 
+        document.Close();
         return stream.ToArray();
     }
 }
