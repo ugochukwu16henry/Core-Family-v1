@@ -137,7 +137,7 @@
             <button 
               type="button" 
               class="button-ghost"
-              (click)="downloadCertificate(enrollment.programTitle)"
+              (click)="downloadCertificate(enrollment.programTitle, enrollment.programId)"
               *ngIf="enrollment.completedAt"
             >
               Download Certificate
