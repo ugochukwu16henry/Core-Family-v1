@@ -1,6 +1,8 @@
 using CoreFamily.API.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace CoreFamily.API.Infrastructure.Services;
 
@@ -20,9 +22,9 @@ public class SendGridEmailService : IEmailService
         ILogger<SendGridEmailService> logger)
     {
         _logger = logger;
-        _sendGridApiKey = configuration["EmailProvider:SendGrid:ApiKey"];
-        _fromEmail = configuration["EmailProvider:SendGrid:FromEmail"] ?? "noreply@corefamily.edu";
-        _fromName = configuration["EmailProvider:SendGrid:FromName"] ?? "Core Family";
+        _sendGridApiKey = configuration["SendGrid:ApiKey"] ?? configuration["EmailProvider:SendGrid:ApiKey"];
+        _fromEmail = configuration["SendGrid:FromEmail"] ?? configuration["EmailProvider:SendGrid:FromEmail"] ?? "noreply@corefamily.edu";
+        _fromName = configuration["SendGrid:FromName"] ?? configuration["EmailProvider:SendGrid:FromName"] ?? "Core Family";
 
         if (string.IsNullOrEmpty(_sendGridApiKey))
         {
@@ -96,38 +98,37 @@ public class SendGridEmailService : IEmailService
         if (string.IsNullOrEmpty(_sendGridApiKey))
         {
             _logger.LogWarning("SendGrid API key not configured. Email would be sent to {Email} but cannot proceed.", to);
-            await Task.CompletedTask;
             return;
         }
 
         try
         {
-            // TODO: Uncomment when SendGrid NuGet package is installed
-            /*
             var client = new SendGridClient(_sendGridApiKey);
             var from = new EmailAddress(_fromEmail, _fromName);
-            var to_email = new EmailAddress(to);
-            var msg = new SendGridMessage()
+            var toEmail = new EmailAddress(to);
+            var msg = new SendGridMessage
             {
                 From = from,
                 Subject = subject,
                 HtmlContent = htmlBody
             };
-            msg.AddTo(to_email);
+            msg.AddTo(toEmail);
 
             var response = await client.SendEmailAsync(msg);
-            
+            var responseBody = await response.Body.ReadAsStringAsync();
+
             if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
             {
                 _logger.LogInformation("Email sent successfully to {Email}", to);
             }
             else
             {
-                _logger.LogError("SendGrid returned status {StatusCode} for email to {Email}", response.StatusCode, to);
+                _logger.LogError(
+                    "SendGrid returned status {StatusCode} for email to {Email}. Body: {Body}",
+                    response.StatusCode,
+                    to,
+                    responseBody);
             }
-            */
-
-            _logger.LogInformation("Email queued via SendGrid: To={Email}, Subject={Subject}", to, subject);
         }
         catch (Exception ex)
         {

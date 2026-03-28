@@ -108,8 +108,18 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, PaystackPaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, GooglePayPaymentGateway>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<SendGridEmailService>();
+builder.Services.AddScoped<IEmailService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var sendGridApiKey = config["SendGrid:ApiKey"];
+    return string.IsNullOrWhiteSpace(sendGridApiKey)
+        ? sp.GetRequiredService<EmailService>()
+        : sp.GetRequiredService<SendGridEmailService>();
+});
 builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IAchievementSeeder, AchievementSeeder>();
 
 // ── FluentValidation ──────────────────────────────────────────────
 builder.Services.AddFluentValidationAutoValidation();
@@ -117,6 +127,13 @@ builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
 
 // ── Build ─────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// Seed achievements catalog at startup
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IAchievementSeeder>();
+    await seeder.SeedAsync();
+}
 
 // ── Middleware Pipeline ───────────────────────────────────────────
 if (app.Environment.IsDevelopment())

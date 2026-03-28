@@ -1,5 +1,13 @@
 using CoreFamily.API.Application.Interfaces;
+using iText.IO.Font.Constants;
+using iText.Kernel.Colors;
+using iText.Kernel.Font;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 using Microsoft.Extensions.Logging;
+using Paragraph = iText.Layout.Element.Paragraph;
 
 namespace CoreFamily.API.Infrastructure.Services;
 
@@ -41,8 +49,13 @@ public class PdfService : IPdfService
                 programTitle,
                 certificateCode);
 
-            // Temporary: Return a simple placeholder PDF content
-            var pdfContent = GenerateSimplePdfContent(recipientName, programTitle, certificateCode, completionDate);
+            var pdfContent = BuildCertificatePdf(
+                recipientName,
+                programTitle,
+                certificateCode,
+                completionDate,
+                instructorName);
+
             return await Task.FromResult(pdfContent);
         }
         catch (Exception ex)
@@ -66,8 +79,7 @@ public class PdfService : IPdfService
                 completedPrograms.Count,
                 unlockedAchievements.Count);
 
-            // TODO: Implement using iTextSharp or iText7
-            var pdfContent = GenerateSimpleProgressReportContent(userName, completedPrograms, unlockedAchievements, currentStreak);
+            var pdfContent = BuildProgressReportPdf(userName, completedPrograms, unlockedAchievements, currentStreak);
             return await Task.FromResult(pdfContent);
         }
         catch (Exception ex)
@@ -77,94 +89,150 @@ public class PdfService : IPdfService
         }
     }
 
-    private byte[] GenerateSimplePdfContent(
+    private static byte[] BuildCertificatePdf(
         string recipientName,
         string programTitle,
         string certificateCode,
-        DateTime completionDate)
+        DateTime completionDate,
+        string instructorName)
     {
-        // This is a placeholder implementation that returns a simple text-based PDF structure
-        // In production, use iTextSharp or iText7 to generate actual PDF files
+        using var stream = new MemoryStream();
+        using var writer = new PdfWriter(stream);
+        using var pdf = new PdfDocument(writer);
+        using var document = new Document(pdf);
 
-        var content = $@"
-%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >>
-endobj
-5 0 obj
-<< /Length 500 >>
-stream
-BT
-/F1 36 Tf
-100 700 Td
-(Certificate of Completion) Tj
-0 -50 Td
-/F1 14 Tf
-(This certifies that ) Tj
-({recipientName}) Tj
-0 -30 Td
-(has successfully completed) Tj
-0 -20 Td
-/F1 18 Tf
-({programTitle}) Tj
-/F1 12 Tf
-0 -40 Td
-(Certificate Code: {certificateCode}) Tj
-0 -20 Td
-(Completion Date: {completionDate:MMMM d, yyyy}) Tj
-0 -40 Td
-(Issued by Core Family) Tj
-ET
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000203 00000 n 
-0000000311 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-863
-%%EOF
-";
+        var titleFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+        var bodyFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
 
-        return System.Text.Encoding.UTF8.GetBytes(content);
+        document.SetMargins(60, 60, 60, 60);
+
+        var titleColor = new DeviceRgb(37, 99, 235);
+
+        document.Add(new Paragraph("Certificate of Completion")
+            .SetFont(titleFont)
+            .SetFontSize(30)
+            .SetFontColor(titleColor)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(20));
+
+        document.Add(new Paragraph("This certifies that")
+            .SetFont(bodyFont)
+            .SetFontSize(14)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(10));
+
+        document.Add(new Paragraph(recipientName)
+            .SetFont(titleFont)
+            .SetFontSize(24)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(10));
+
+        document.Add(new Paragraph("has successfully completed")
+            .SetFont(bodyFont)
+            .SetFontSize(14)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(10));
+
+        document.Add(new Paragraph(programTitle)
+            .SetFont(titleFont)
+            .SetFontSize(20)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(25));
+
+        document.Add(new Paragraph($"Completion Date: {completionDate:MMMM d, yyyy}")
+            .SetFont(bodyFont)
+            .SetFontSize(12)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(4));
+
+        document.Add(new Paragraph($"Certificate Code: {certificateCode}")
+            .SetFont(bodyFont)
+            .SetFontSize(12)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(4));
+
+        document.Add(new Paragraph($"Issued by: {instructorName}")
+            .SetFont(bodyFont)
+            .SetFontSize(12)
+            .SetTextAlignment(TextAlignment.CENTER)
+            .SetMarginBottom(4));
+
+        return stream.ToArray();
     }
 
-    private byte[] GenerateSimpleProgressReportContent(
+    private static byte[] BuildProgressReportPdf(
         string userName,
         List<(string ProgramTitle, DateTime CompletionDate)> completedPrograms,
         List<(string AchievementName, int Points)> unlockedAchievements,
         int currentStreak)
     {
-        // Placeholder implementation
-        var content = $@"
-Progress Report for {userName}
+        using var stream = new MemoryStream();
+        using var writer = new PdfWriter(stream);
+        using var pdf = new PdfDocument(writer);
+        using var document = new Document(pdf);
 
-Completed Programs: {completedPrograms.Count}
-{string.Join("\n", completedPrograms.Select(p => $"  - {{p.ProgramTitle}} ({{p.CompletionDate:MMMM d, yyyy}})"))}
+        var titleFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+        var bodyFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
 
-Unlocked Achievements: {unlockedAchievements.Count}
-{string.Join("\n", unlockedAchievements.Select(a => $"  - {{a.AchievementName}} ({{a.Points}} points)"))}
+        document.SetMargins(50, 50, 50, 50);
 
-Current Learning Streak: {currentStreak} days
+        document.Add(new Paragraph($"Progress Report: {userName}")
+            .SetFont(titleFont)
+            .SetFontSize(22)
+            .SetTextAlignment(TextAlignment.LEFT)
+            .SetMarginBottom(15));
 
-Generated: {DateTime.UtcNow:g}
-";
+        document.Add(new Paragraph($"Generated: {DateTime.UtcNow:MMMM d, yyyy h:mm tt} UTC")
+            .SetFont(bodyFont)
+            .SetFontSize(10)
+            .SetMarginBottom(20));
 
-        return System.Text.Encoding.UTF8.GetBytes(content);
+        document.Add(new Paragraph($"Current Learning Streak: {currentStreak} days")
+            .SetFont(titleFont)
+            .SetFontSize(13)
+            .SetMarginBottom(12));
+
+        document.Add(new Paragraph($"Completed Programs ({completedPrograms.Count})")
+            .SetFont(titleFont)
+            .SetFontSize(14)
+            .SetMarginBottom(8));
+
+        if (completedPrograms.Count == 0)
+        {
+            document.Add(new Paragraph("No completed programs yet.").SetFont(bodyFont).SetFontSize(11).SetMarginBottom(12));
+        }
+        else
+        {
+            foreach (var program in completedPrograms.OrderByDescending(p => p.CompletionDate))
+            {
+                document.Add(new Paragraph($"- {program.ProgramTitle} ({program.CompletionDate:MMMM d, yyyy})")
+                    .SetFont(bodyFont)
+                    .SetFontSize(11)
+                    .SetMarginBottom(3));
+            }
+            document.Add(new Paragraph("").SetMarginBottom(8));
+        }
+
+        document.Add(new Paragraph($"Unlocked Achievements ({unlockedAchievements.Count})")
+            .SetFont(titleFont)
+            .SetFontSize(14)
+            .SetMarginBottom(8));
+
+        if (unlockedAchievements.Count == 0)
+        {
+            document.Add(new Paragraph("No unlocked achievements yet.").SetFont(bodyFont).SetFontSize(11));
+        }
+        else
+        {
+            foreach (var achievement in unlockedAchievements.OrderByDescending(a => a.Points))
+            {
+                document.Add(new Paragraph($"- {achievement.AchievementName} ({achievement.Points} points)")
+                    .SetFont(bodyFont)
+                    .SetFontSize(11)
+                    .SetMarginBottom(3));
+            }
+        }
+
+        return stream.ToArray();
     }
 }

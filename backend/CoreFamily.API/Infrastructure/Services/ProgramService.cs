@@ -487,7 +487,80 @@ public class ProgramService : IProgramService
         {
             enrollment.CompletedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            await EvaluateProgramCompletionAchievementsAsync(userId);
         }
+    }
+
+    private async Task EvaluateProgramCompletionAchievementsAsync(Guid userId)
+    {
+        var completedPrograms = await _db.Enrollments
+            .Where(e => e.UserId == userId && e.CompletedAt != null)
+            .CountAsync();
+
+        var unlockedIds = await _db.UserAchievements
+            .Where(ua => ua.UserId == userId)
+            .Select(ua => ua.AchievementId)
+            .ToListAsync();
+
+        var toUnlock = await _db.Achievements
+            .Where(a => a.IsPublished)
+            .Where(a => a.AchievementType == "ProgramCompletion")
+            .Where(a => a.UnlockThreshold <= completedPrograms)
+            .Where(a => !unlockedIds.Contains(a.Id))
+            .OrderBy(a => a.UnlockThreshold)
+            .ToListAsync();
+
+        if (toUnlock.Count == 0)
+        {
+            return;
+        }
+
+        var user = await _db.Users
+            .Include(u => u.Profile)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        var recipientName = BuildFullName(user?.Profile?.FirstName, user?.Profile?.LastName);
+
+        foreach (var achievement in toUnlock)
+        {
+            _db.UserAchievements.Add(new UserAchievement
+            {
+                UserId = userId,
+                AchievementId = achievement.Id,
+                UnlockedAt = DateTime.UtcNow
+            });
+
+            if (!string.IsNullOrWhiteSpace(user?.Email))
+            {
+                try
+                {
+                    await _emailService.SendAchievementUnlockedAsync(
+                        user.Email,
+                        recipientName,
+                        achievement.Name,
+                        achievement.Points);
+                }
+                catch (Exception)
+                {
+                    // Non-blocking notification failure
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(user?.Email) && (completedPrograms == 1 || completedPrograms == 3 || completedPrograms == 5 || completedPrograms == 10 || completedPrograms == 20))
+        {
+            try
+            {
+                await _emailService.SendMilestoneReachedAsync(user.Email, recipientName, completedPrograms);
+            }
+            catch (Exception)
+            {
+                // Non-blocking notification failure
+            }
+        }
+
+        await _db.SaveChangesAsync();
     }
 
     private static LessonPlayerDto MapLessonPlayer(Lesson lesson, ProgressEntry? progress) => new(
@@ -690,10 +763,7 @@ public class ProgramService : IProgramService
 
     private static Task<string> GenerateCertificatePdfAsync(Guid userId, Program_ program, DateTime completedAt)
     {
-        // TODO: Implement actual PDF generation (e.g., using iTextSharp or similar)
-        // For now, return a placeholder URL
-        var certificateId = Guid.NewGuid();
-        var url = $"https://certificates.corefamily.edu/{certificateId}/download";
+        var url = $"/api/programs/certificates/{program.Id}/download";
         return Task.FromResult(url);
     }
 
