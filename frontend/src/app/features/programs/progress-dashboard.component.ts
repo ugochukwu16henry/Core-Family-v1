@@ -2,7 +2,7 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ProgramsService } from '../../core/services/programs.service';
-import { ProgressSummary } from '../../core/models/program.model';
+import { Achievement, LearningStreak, ProgressSummary } from '../../core/models/program.model';
 
 @Component({
   selector: 'app-progress-dashboard',
@@ -15,28 +15,33 @@ export class ProgressDashboardComponent {
   private readonly programsService = inject(ProgramsService);
 
   progress = signal<ProgressSummary | null>(null);
+  achievements = signal<Achievement[]>([]);
+  streak = signal<LearningStreak | null>(null);
   loading = signal(true);
   error = signal<string | null>(null);
 
   constructor() {
     effect(() => {
-      this.loadProgress();
+      this.loadData();
     });
   }
 
-  private loadProgress(): void {
+  private loadData(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.programsService.getProgressSummary().subscribe({
-      next: (data) => {
-        this.progress.set(data);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load progress data');
-        this.loading.set(false);
-      }
+    Promise.all([
+      this.programsService.getProgressSummary().toPromise(),
+      this.programsService.getMyAchievements().toPromise(),
+      this.programsService.getMyStreak().toPromise()
+    ]).then(([progress, achievements, streak]) => {
+      if (progress) this.progress.set(progress);
+      if (achievements) this.achievements.set(achievements);
+      if (streak) this.streak.set(streak);
+      this.loading.set(false);
+    }).catch(err => {
+      this.error.set(err?.error?.message || 'Failed to load data');
+      this.loading.set(false);
     });
   }
 
@@ -67,8 +72,28 @@ export class ProgressDashboardComponent {
     return '#f44336';
   }
 
-  downloadCertificate(programTitle: string): void {
-    // TODO: Implement certificate download
-    alert(`Downloading certificate for: ${programTitle}`);
+  getUnlockedAchievements(): Achievement[] {
+    return this.achievements().filter(a => a.isUnlocked);
+  }
+
+  getLockedAchievements(): Achievement[] {
+    return this.achievements()
+      .filter(a => !a.isUnlocked)
+      .slice(0, 3); // Show next 3 locked achievements
+  }
+
+  downloadCertificate(programTitle: string, programId: string): void {
+    this.programsService.downloadCertificate(programId).subscribe({
+      next: (blob) => {
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `${programTitle}-certificate.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      },
+      error: (err) => {
+        alert('Note: Certificate PDF generation not yet implemented on backend');
+      }
+    });
   }
 }

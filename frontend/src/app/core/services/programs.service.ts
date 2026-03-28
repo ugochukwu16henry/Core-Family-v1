@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { Certificate, EnrollmentSummary, LessonPlayer, ProgramDetail, ProgramLearning, ProgressSummary, ProgramSummary, UpdateLessonProgressRequest } from '../models/program.model';
+import { Achievement, Certificate, EnrollmentSummary, LearningStreak, LessonPlayer, ProgramDetail, ProgramLearning, ProgressSummary, ProgramSummary, UpdateLessonProgressRequest } from '../models/program.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProgramsService {
@@ -52,5 +52,20 @@ export class ProgramsService {
 
   getCertificateById(certificateId: string): Observable<Certificate> {
     return this.http.get<Certificate>(`${environment.apiUrl}/programs/certificates/${certificateId}`);
+  }
+
+  downloadCertificate(programId: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/programs/certificates/${programId}/download`, {
+      responseType: 'blob'
+    });
+  }
+
+  // Achievements & Gamification
+  getMyAchievements(): Observable<Achievement[]> {
+    return this.http.get<Achievement[]>(`${environment.apiUrl}/programs/achievements`);
+  }
+
+  getMyStreak(): Observable<LearningStreak> {
+    return this.http.get<LearningStreak>(`${environment.apiUrl}/programs/streak`);
   }
 }

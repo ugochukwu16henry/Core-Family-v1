@@ -121,3 +121,29 @@ public record CertificateDto(
     DateTime IssuedAt,
     string? ProgramTitle
 );
+
+/// <summary>
+/// Achievement/Badge information
+/// </summary>
+public record AchievementDto(
+    Guid Id,
+    string Name,
+    string Description,
+    string? IconUrl,
+    int UnlockThreshold,
+    string AchievementType,
+    int Points,
+    bool IsUnlocked,
+    DateTime? UnlockedAt
+);
+
+/// <summary>
+/// Learning streak information for gamification
+/// </summary>
+public record LearningStreakDto(
+    Guid UserId,
+    int CurrentStreak,
+    int LongestStreak,
+    DateTime? LastActivityDate,
+    DateTime StreakStartDate
+);

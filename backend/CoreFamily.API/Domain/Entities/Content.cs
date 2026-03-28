@@ -89,3 +89,40 @@ public class ProgressEntry : BaseEntity
     public User User { get; set; } = null!;
     public Content Content { get; set; } = null!;
 }
+
+public class Achievement : BaseEntity
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? IconUrl { get; set; }
+    public int UnlockThreshold { get; set; } // e.g., number of programs completed
+    public string AchievementType { get; set; } = string.Empty; // e.g., "ProgramCompletion", "Streak", "HighScore"
+    public int Points { get; set; } = 0; // Gamification points
+    public bool IsPublished { get; set; } = true;
+
+    // Navigation
+    public ICollection<UserAchievement> UserAchievements { get; set; } = [];
+}
+
+public class UserAchievement : BaseEntity
+{
+    public Guid UserId { get; set; }
+    public Guid AchievementId { get; set; }
+    public DateTime UnlockedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation
+    public User User { get; set; } = null!;
+    public Achievement Achievement { get; set; } = null!;
+}
+
+public class LearningStreak : BaseEntity
+{
+    public Guid UserId { get; set; }
+    public int CurrentStreak { get; set; } = 0; // Days in a row
+    public int LongestStreak { get; set; } = 0;
+    public DateTime? LastActivityDate { get; set; }
+    public DateTime StreakStartDate { get; set; }
+
+    // Navigation
+    public User User { get; set; } = null!;
+}

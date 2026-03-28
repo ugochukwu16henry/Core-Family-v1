@@ -21,6 +21,11 @@ public class CoreFamilyDbContext : DbContext
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<ProgressEntry> ProgressEntries => Set<ProgressEntry>();
 
+    // ── Achievements & Gamification ───────────────────────────────
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<LearningStreak> LearningStreaks => Set<LearningStreak>();
+
     // ── Counselors & Sessions ─────────────────────────────────────
     public DbSet<CounselorProfile> CounselorProfiles => Set<CounselorProfile>();
     public DbSet<Session> Sessions => Set<Session>();
@@ -145,6 +150,31 @@ public class CoreFamilyDbContext : DbContext
             e.HasIndex(rt => rt.Token).IsUnique();
             e.HasOne(rt => rt.User).WithMany()
              .HasForeignKey(rt => rt.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Achievements & Gamification ───────────────────────────
+        modelBuilder.Entity<Achievement>(e =>
+        {
+            e.Property(a => a.Name).HasMaxLength(100).IsRequired();
+            e.Property(a => a.Description).HasMaxLength(500);
+            e.Property(a => a.AchievementType).HasMaxLength(50).IsRequired();
+            e.HasIndex(a => a.AchievementType);
+        });
+
+        modelBuilder.Entity<UserAchievement>(e =>
+        {
+            e.HasIndex(ua => new { ua.UserId, ua.AchievementId }).IsUnique();
+            e.HasOne(ua => ua.User).WithMany()
+             .HasForeignKey(ua => ua.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(ua => ua.Achievement).WithMany(a => a.UserAchievements)
+             .HasForeignKey(ua => ua.AchievementId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<LearningStreak>(e =>
+        {
+            e.HasOne(ls => ls.User).WithOne()
+             .HasForeignKey<LearningStreak>(ls => ls.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(ls => ls.UserId).IsUnique();
         });
     }
 

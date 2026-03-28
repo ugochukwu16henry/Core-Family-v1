@@ -678,4 +678,105 @@ public class ProgramService : IProgramService
         cert.IssuedAt,
         programTitle
     );
+
+    public async Task<IReadOnlyList<AchievementDto>> GetMyAchievementsAsync(Guid userId)
+    {
+        var achievements = await _db.UserAchievements
+            .Where(ua => ua.UserId == userId)
+            .Include(ua => ua.Achievement)
+            .GroupBy(ua => ua.Achievement)
+            .Select(g => new AchievementDto(
+                g.Key.Id,
+                g.Key.Name,
+                g.Key.Description,
+                g.Key.IconUrl,
+                g.Key.UnlockThreshold,
+                g.Key.AchievementType,
+                g.Key.Points,
+                true,
+                g.OrderByDescending(x => x.UnlockedAt).FirstOrDefault()!.UnlockedAt
+            ))
+            .OrderByDescending(a => a.UnlockedAt)
+            .ToListAsync();
+
+        // Also get locked achievements to show progress
+        var completedPrograms = await _db.Enrollments
+            .Where(e => e.UserId == userId && e.CompletedAt != null)
+            .CountAsync();
+
+        var lockedAchievements = await _db.Achievements
+            .Where(a => !_db.UserAchievements.Any(ua => ua.UserId == userId && ua.AchievementId == a.Id))
+            .Where(a => a.UnlockThreshold > completedPrograms)
+            .Select(a => new AchievementDto(
+                a.Id,
+                a.Name,
+                a.Description,
+                a.IconUrl,
+                a.UnlockThreshold,
+                a.AchievementType,
+                a.Points,
+                false,
+                null
+            ))
+            .OrderBy(a => a.UnlockThreshold)
+            .ToListAsync();
+
+        return achievements.Concat(lockedAchievements).ToList();
+    }
+
+    public async Task<LearningStreakDto?> GetMyStreakAsync(Guid userId)
+    {
+        var streak = await _db.LearningStreaks
+            .FirstOrDefaultAsync(s => s.UserId == userId);
+
+        if (streak is null)
+        {
+            // Create new streak if doesn't exist
+            streak = new LearningStreak
+            {
+                UserId = userId,
+                CurrentStreak = 0,
+                LongestStreak = 0,
+                StreakStartDate = DateTime.UtcNow
+            };
+            _db.LearningStreaks.Add(streak);
+            await _db.SaveChangesAsync();
+        }
+
+        return new LearningStreakDto(
+            streak.UserId,
+            streak.CurrentStreak,
+            streak.LongestStreak,
+            streak.LastActivityDate,
+            streak.StreakStartDate
+        );
+    }
+
+    public async Task<byte[]> GenerateCertificatePdfAsync(Guid userId, Guid programId)
+    {
+        var user = await _db.Users
+            .Include(u => u.Profile)
+            .FirstOrDefaultAsync(u => u.Id == userId)
+            ?? throw new KeyNotFoundException("User not found");
+
+        var program = await _db.Programs
+            .FirstOrDefaultAsync(p => p.Id == programId)
+            ?? throw new KeyNotFoundException("Program not found");
+
+        var cert = await _db.Certificates
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ProgramId == programId)
+            ?? throw new KeyNotFoundException("Certificate not found");
+
+        // TODO: Implement actual PDF generation using iTextSharp or PDFSharp
+        // placeholder implementation returns empty byte array
+        // Real implementation would:
+        // 1. Create PDF document from template
+        // 2. Add recipient name from user profile
+        // 3. Add program title
+        // 4. Add certificate code and issue date
+        // 5. Add signature/digital stamp
+        // 6. Return PDF bytes
+
+        return Array.Empty<byte>();
+    }
 }

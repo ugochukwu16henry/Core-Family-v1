@@ -45,16 +45,23 @@ export class CertificatesComponent {
   downloadCertificate(certificate: Certificate): void {
     this.downloadingId.set(certificate.id);
 
-    // Simulate download (in real implementation, this would trigger a file download)
-    const link = document.createElement('a');
-    link.href = certificate.pdfUrl;
-    link.download = `${certificate.certificateCode}.pdf`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    setTimeout(() => this.downloadingId.set(null), 1000);
+    this.programsService.downloadCertificate(certificate.programId || '').subscribe({
+      next: (blob) => {
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `${certificate.certificateCode}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+        this.downloadingId.set(null);
+      },
+      error: (err) => {
+        // Fallback: open PDF URL in new tab if available
+        if (certificate.pdfUrl) {
+          window.open(certificate.pdfUrl, '_blank');
+        }
+        this.downloadingId.set(null);
+      }
+    });
   }
 
   viewCertificate(certificate: Certificate): void {

@@ -93,3 +93,23 @@ export interface Certificate {
   issuedAt: string;
   programTitle?: string | null;
 }
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl?: string | null;
+  unlockThreshold: number;
+  achievementType: string;
+  points: number;
+  isUnlocked: boolean;
+  unlockedAt?: string | null;
+}
+
+export interface LearningStreak {
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate?: string | null;
+  streakStartDate: string;
+}

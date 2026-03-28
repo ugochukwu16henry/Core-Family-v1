@@ -93,6 +93,35 @@ public class ProgramsController : BaseApiController
         return certificate is null ? NotFound() : Ok(certificate);
     }
 
+    [Authorize]
+    [HttpGet("certificates/{programId:guid}/download")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadCertificate(Guid programId)
+    {
+        var pdf = await _programs.GenerateCertificatePdfAsync(GetCurrentUserId(), programId);
+        if (pdf.Length == 0)
+        {
+            return BadRequest(new { error = "Certificate PDF generation is not yet implemented" });
+        }
+        return File(pdf, "application/pdf", $"certificate-{programId}.pdf");
+    }
+
+    [Authorize]
+    [HttpGet("achievements")]
+    [ProducesResponseType(typeof(IReadOnlyList<AchievementDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyAchievements()
+        => Ok(await _programs.GetMyAchievementsAsync(GetCurrentUserId()));
+
+    [Authorize]
+    [HttpGet("streak")]
+    [ProducesResponseType(typeof(LearningStreakDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyStreak()
+    {
+        var streak = await _programs.GetMyStreakAsync(GetCurrentUserId());
+        return Ok(streak);
+    }
+
     private Guid GetCurrentUserId()
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)

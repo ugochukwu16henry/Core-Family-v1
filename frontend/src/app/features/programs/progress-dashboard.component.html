@@ -64,7 +64,46 @@
         </ng-container>
       </div>
     </div>
+    <!-- Achievements Section -->
+    <div class="card achievements-card" *ngIf="getUnlockedAchievements().length > 0 || getLockedAchievements().length > 0">
+      <h2>Badges & Achievements</h2>
+      <div class="achievements-grid">
+        <article class="achievement-item" *ngFor="let achievement of getUnlockedAchievements()">
+          <div class="achievement-icon">{{ achievement.iconUrl || '⭐' }}</div>
+          <h4>{{ achievement.name }}</h4>
+          <p>{{ achievement.description }}</p>
+          <span class="points">+{{ achievement.points }} points</span>
+          <span class="unlock-date" *ngIf="achievement.unlockedAt">
+            Unlocked: {{ achievement.unlockedAt | date: 'short' }}
+          </span>
+        </article>
+        <article class="achievement-item locked" *ngFor="let achievement of getLockedAchievements()">
+          <div class="achievement-icon">🔒</div>
+          <h4>{{ achievement.name }}</h4>
+          <p>{{ achievement.description }}</p>
+          <span class="threshold">Unlock at {{ achievement.unlockThreshold }} programs</span>
+        </article>
+      </div>
+    </div>
 
+    <!-- Learning Streak Section -->
+    <div class="card streak-card" *ngIf="streak() as streakData">
+      <h2>Learning Streak 🔥</h2>
+      <div class="streak-stats">
+        <div class="streak-stat">
+          <div class="stat-value">{{ streakData.currentStreak }}</div>
+          <div class="stat-label">Current Streak</div>
+        </div>
+        <div class="streak-stat">
+          <div class="stat-value">{{ streakData.longestStreak }}</div>
+          <div class="stat-label">Longest Streak</div>
+        </div>
+        <div class="streak-stat">
+          <div class="stat-value">{{ streakData.lastActivityDate ? (streakData.lastActivityDate | date: 'short') : 'Never' }}</div>
+          <div class="stat-label">Last Activity</div>
+        </div>
+      </div>
+    </div>
     <!-- Enrollments Section -->
     <div class="card enrollments-card" *ngIf="stats.enrollments.length > 0">
       <h2>Your Programs</h2>

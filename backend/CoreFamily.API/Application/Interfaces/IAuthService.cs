@@ -55,6 +55,11 @@ public interface IProgramService
     Task<CertificateDto> GenerateCertificateAsync(Guid userId, Guid programId);
     Task<IReadOnlyList<CertificateDto>> GetMyCertificatesAsync(Guid userId);
     Task<CertificateDto?> GetCertificateByIdAsync(Guid certificateId);
+
+    // Achievements & Gamification
+    Task<IReadOnlyList<AchievementDto>> GetMyAchievementsAsync(Guid userId);
+    Task<LearningStreakDto?> GetMyStreakAsync(Guid userId);
+    Task<byte[]> GenerateCertificatePdfAsync(Guid userId, Guid programId);
 }
 
 public interface IPaymentService

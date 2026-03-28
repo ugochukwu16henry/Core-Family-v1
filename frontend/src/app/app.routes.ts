@@ -54,6 +54,11 @@ export const routes: Routes = [
 				loadComponent: () => import('./features/programs/progress-dashboard.component').then((m) => m.ProgressDashboardComponent)
 			},
 			{
+				path: 'certificates',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/programs/certificates.component').then((m) => m.CertificatesComponent)
+			},
+			{
 				path: 'billing',
 				canActivate: [authGuard],
 				loadComponent: () => import('./features/payments/billing.component').then((m) => m.BillingComponent)
