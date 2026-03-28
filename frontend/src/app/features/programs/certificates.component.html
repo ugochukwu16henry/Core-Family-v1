@@ -1,0 +1,89 @@
+<section class="certificates page-shell">
+  <p class="feedback error" *ngIf="error()">{{ error() }}</p>
+  <p class="feedback" *ngIf="loading()">Loading your certificates...</p>
+
+  <ng-container *ngIf="!loading()">
+    <!-- Header -->
+    <div class="card header-card">
+      <h1>Your Certificates</h1>
+      <p class="subtitle">Celebrate your achievements and share your progress</p>
+    </div>
+
+    <!-- Certificates List -->
+    <ng-container *ngIf="certificates().length > 0">
+      <div class="certificates-grid">
+        <article class="certificate-card" *ngFor="let cert of certificates()">
+          <!-- Certificate Preview -->
+          <div class="certificate-preview">
+            <div class="cert-icon">📜</div>
+            <div class="cert-content">
+              <h3>{{ cert.programTitle || 'Certificate' }}</h3>
+              <p class="cert-code">Code: {{ cert.certificateCode }}</p>
+              <p class="cert-date">Issued: {{ cert.issuedAt | date: 'MMM d, yyyy' }}</p>
+            </div>
+          </div>
+
+          <!-- Certificate Actions -->
+          <div class="certificate-actions">
+            <button
+              type="button"
+              class="button-primary"
+              (click)="downloadCertificate(cert)"
+              [disabled]="downloadingId() === cert.id"
+            >
+              {{ getDownloadButtonText(cert.id) }}
+            </button>
+            <button
+              type="button"
+              class="button-secondary"
+              (click)="viewCertificate(cert)"
+            >
+              View
+            </button>
+            <div class="more-actions">
+              <button
+                type="button"
+                class="button-ghost action-btn"
+                title="Copy certificate code"
+                (click)="copyCertificateCode(cert.certificateCode)"
+              >
+                📋
+              </button>
+              <button
+                type="button"
+                class="button-ghost action-btn"
+                title="Share certificate"
+                (click)="shareCertificate(cert)"
+              >
+                🔗
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Additional Info -->
+      <div class="card info-card">
+        <h3>Certificate Information</h3>
+        <ul>
+          <li>Each certificate contains a unique verification code</li>
+          <li>Certificates are issued upon program completion</li>
+          <li>You can download your certificates anytime</li>
+          <li>Share your certificates with employers or colleagues</li>
+        </ul>
+      </div>
+    </ng-container>
+
+    <!-- Empty State -->
+    <div class="card empty-state" *ngIf="certificates().length === 0 && !error()">
+      <div class="empty-content">
+        <div class="empty-icon">🎓</div>
+        <h2>No Certificates Yet</h2>
+        <p>Complete a program to earn your first certificate!</p>
+        <a class="button-primary" routerLink="/my-learning">
+          View Your Progress
+        </a>
+      </div>
+    </div>
+  </ng-container>
+</section>

@@ -62,6 +62,37 @@ public class ProgramsController : BaseApiController
     public async Task<IActionResult> UpdateLessonProgress(Guid programId, Guid lessonId, [FromBody] UpdateLessonProgressDto dto)
         => Ok(await _programs.UpdateLessonProgressAsync(GetCurrentUserId(), programId, lessonId, dto));
 
+    [Authorize]
+    [HttpGet("progress/summary")]
+    [ProducesResponseType(typeof(ProgressSummaryDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProgressSummary()
+        => Ok(await _programs.GetProgressSummaryAsync(GetCurrentUserId()));
+
+    [Authorize]
+    [HttpPost("{programId:guid}/certificate")]
+    [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GenerateCertificate(Guid programId)
+    {
+        var certificate = await _programs.GenerateCertificateAsync(GetCurrentUserId(), programId);
+        return StatusCode(StatusCodes.Status201Created, certificate);
+    }
+
+    [Authorize]
+    [HttpGet("certificates")]
+    [ProducesResponseType(typeof(IReadOnlyList<CertificateDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyCertificates()
+        => Ok(await _programs.GetMyCertificatesAsync(GetCurrentUserId()));
+
+    [HttpGet("certificates/{certificateId:guid}")]
+    [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCertificateById(Guid certificateId)
+    {
+        var certificate = await _programs.GetCertificateByIdAsync(certificateId);
+        return certificate is null ? NotFound() : Ok(certificate);
+    }
+
     private Guid GetCurrentUserId()
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { EnrollmentSummary, LessonPlayer, ProgramDetail, ProgramLearning, ProgramSummary, UpdateLessonProgressRequest } from '../models/program.model';
+import { Certificate, EnrollmentSummary, LessonPlayer, ProgramDetail, ProgramLearning, ProgressSummary, ProgramSummary, UpdateLessonProgressRequest } from '../models/program.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProgramsService {
@@ -35,5 +35,22 @@ export class ProgramsService {
 
   updateLessonProgress(programId: string, lessonId: string, payload: UpdateLessonProgressRequest): Observable<LessonPlayer> {
     return this.http.post<LessonPlayer>(`${environment.apiUrl}/programs/${programId}/lessons/${lessonId}/progress`, payload);
+  }
+
+  // Progress & Certificates
+  getProgressSummary(): Observable<ProgressSummary> {
+    return this.http.get<ProgressSummary>(`${environment.apiUrl}/programs/progress/summary`);
+  }
+
+  generateCertificate(programId: string): Observable<Certificate> {
+    return this.http.post<Certificate>(`${environment.apiUrl}/programs/${programId}/certificate`, {});
+  }
+
+  getMyCertificates(): Observable<Certificate[]> {
+    return this.http.get<Certificate[]>(`${environment.apiUrl}/programs/certificates`);
+  }
+
+  getCertificateById(certificateId: string): Observable<Certificate> {
+    return this.http.get<Certificate>(`${environment.apiUrl}/programs/certificates/${certificateId}`);
   }
 }

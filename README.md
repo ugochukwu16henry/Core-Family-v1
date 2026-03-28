@@ -108,6 +108,29 @@ dotnet run
 
 ---
 
+## Testing
+
+### Run Backend Integration Tests
+
+Execute all integration tests for payment webhook processing, signature validation, and transaction state transitions:
+
+```bash
+cd backend
+dotnet test CoreFamily.Tests/CoreFamily.Tests.csproj --logger:"console;verbosity=normal"
+```
+
+**Test Coverage** (15 integration tests):
+
+- **Stripe Webhooks**: HMAC-SHA256 signature validation, replay window enforcement (300s), checkout.session.completed/charge.refunded event mapping
+- **Paystack Webhooks**: HMAC-SHA512 signature validation, charge.success/charge.failed/refund.processed event mapping
+- **Transaction state transitions**: Pending → Completed/Failed/Refunded across both providers
+- **Session updates**: Auto-confirm session on payment completion; auto-cancel on refund before completion
+- **Error handling**: Transaction not found exceptions, missing webhook secrets (dev mode bypass)
+
+Expected output: `Total: 15, Passed: 15, Failed: 0`
+
+---
+
 ## Environment Variables
 
 Use `.env.local` for your machine-specific values. **Never commit local env files.**

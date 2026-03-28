@@ -49,6 +49,11 @@ export const routes: Routes = [
 				loadComponent: () => import('./features/programs/my-learning.component').then((m) => m.MyLearningComponent)
 			},
 			{
+				path: 'progress',
+				canActivate: [authGuard],
+				loadComponent: () => import('./features/programs/progress-dashboard.component').then((m) => m.ProgressDashboardComponent)
+			},
+			{
 				path: 'billing',
 				canActivate: [authGuard],
 				loadComponent: () => import('./features/payments/billing.component').then((m) => m.BillingComponent)

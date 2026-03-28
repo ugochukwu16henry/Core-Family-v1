@@ -82,3 +82,42 @@ public record UpdateLessonProgressDto(
     int SecondsWatched,
     bool MarkCompleted
 );
+
+/// <summary>
+/// Progress summary for a single user across all their enrollments
+/// </summary>
+public record ProgressSummaryDto(
+    int TotalEnrollments,
+    int CompletedPrograms,
+    int InProgressPrograms,
+    decimal CompletionPercentage,
+    int TotalLessonsCompleted,
+    int TotalLessonsEnrolled,
+    DateTime? MostRecentCompletionDate,
+    IReadOnlyList<EnrollmentSummaryDto> Enrollments
+);
+
+/// <summary>
+/// Milestone and badge information
+/// </summary>
+public record MilestoneDto(
+    Guid Id,
+    string Name,
+    string Description,
+    int CompletionThreshold, // e.g., 1 for first completion, 5 for 5 programs
+    bool IsUnlocked,
+    DateTime? UnlockedAt
+);
+
+/// <summary>
+/// Certificate information returned by API
+/// </summary>
+public record CertificateDto(
+    Guid Id,
+    Guid UserId,
+    Guid? ProgramId,
+    string CertificateCode,
+    string PdfUrl,
+    DateTime IssuedAt,
+    string? ProgramTitle
+);

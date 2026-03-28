@@ -49,6 +49,12 @@ public interface IProgramService
     Task<InstructorProgramSummaryDto> PublishProgramAsync(Guid instructorUserId, Guid programId);
     Task<InstructorLessonSummaryDto> AddLessonAsync(Guid instructorUserId, Guid programId, InstructorLessonUpsertDto dto);
     Task<InstructorLessonSummaryDto> UpdateLessonAsync(Guid instructorUserId, Guid programId, Guid lessonId, InstructorLessonUpsertDto dto);
+
+    // Progress & Certificates
+    Task<ProgressSummaryDto> GetProgressSummaryAsync(Guid userId);
+    Task<CertificateDto> GenerateCertificateAsync(Guid userId, Guid programId);
+    Task<IReadOnlyList<CertificateDto>> GetMyCertificatesAsync(Guid userId);
+    Task<CertificateDto?> GetCertificateByIdAsync(Guid certificateId);
 }
 
 public interface IPaymentService

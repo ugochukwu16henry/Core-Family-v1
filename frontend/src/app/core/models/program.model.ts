@@ -72,3 +72,24 @@ export interface UpdateLessonProgressRequest {
   secondsWatched: number;
   markCompleted: boolean;
 }
+
+export interface ProgressSummary {
+  totalEnrollments: number;
+  completedPrograms: number;
+  inProgressPrograms: number;
+  completionPercentage: number;
+  totalLessonsCompleted: number;
+  totalLessonsEnrolled: number;
+  mostRecentCompletionDate?: string | null;
+  enrollments: EnrollmentSummary[];
+}
+
+export interface Certificate {
+  id: string;
+  userId: string;
+  programId?: string | null;
+  certificateCode: string;
+  pdfUrl: string;
+  issuedAt: string;
+  programTitle?: string | null;
+}

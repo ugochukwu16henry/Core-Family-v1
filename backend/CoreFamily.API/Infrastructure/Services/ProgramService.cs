@@ -513,4 +513,169 @@ public class ProgramService : IProgramService
         var fullName = $"{firstName} {lastName}".Trim();
         return string.IsNullOrWhiteSpace(fullName) ? "Unknown Instructor" : fullName;
     }
+
+    public async Task<ProgressSummaryDto> GetProgressSummaryAsync(Guid userId)
+    {
+        var enrollments = await _db.Enrollments
+            .Include(e => e.Program).ThenInclude(p => p.Lessons)
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        if (enrollments.Count == 0)
+        {
+            return new ProgressSummaryDto(
+                TotalEnrollments: 0,
+                CompletedPrograms: 0,
+                InProgressPrograms: 0,
+                CompletionPercentage: 0,
+                TotalLessonsCompleted: 0,
+                TotalLessonsEnrolled: 0,
+                MostRecentCompletionDate: null,
+                Enrollments: []
+            );
+        }
+
+        var enrollmentDtos = new List<EnrollmentSummaryDto>();
+        int totalCompleted = 0;
+        int completedPrograms = 0;
+        DateTime? mostRecentCompletion = null;
+
+        foreach (var enrollment in enrollments)
+        {
+            var lessonContentIds = enrollment.Program.Lessons.Select(l => l.ContentId).ToArray();
+            var completedCount = 0;
+
+            if (lessonContentIds.Length > 0)
+            {
+                completedCount = await _db.ProgressEntries
+                    .Where(pe => pe.UserId == userId && pe.CompletedAt != null && lessonContentIds.Contains(pe.ContentId))
+                    .Select(pe => pe.ContentId)
+                    .Distinct()
+                    .CountAsync();
+            }
+
+            totalCompleted += completedCount;
+            if (enrollment.CompletedAt.HasValue)
+            {
+                completedPrograms++;
+                if (mostRecentCompletion == null || enrollment.CompletedAt > mostRecentCompletion)
+                {
+                    mostRecentCompletion = enrollment.CompletedAt;
+                }
+            }
+
+            enrollmentDtos.Add(new EnrollmentSummaryDto(
+                enrollment.Id,
+                enrollment.Program.Id,
+                enrollment.Program.Title,
+                enrollment.EnrolledAt,
+                enrollment.CompletedAt,
+                enrollment.Program.Lessons.Count,
+                completedCount
+            ));
+        }
+
+        var totalLessonsEnrolled = enrollments.SelectMany(e => e.Program.Lessons).Distinct().Count();
+        var completionPercentage = totalLessonsEnrolled > 0 ? (decimal)totalCompleted / totalLessonsEnrolled * 100 : 0;
+
+        return new ProgressSummaryDto(
+            TotalEnrollments: enrollments.Count,
+            CompletedPrograms: completedPrograms,
+            InProgressPrograms: enrollments.Count - completedPrograms,
+            CompletionPercentage: Math.Round(completionPercentage, 2),
+            TotalLessonsCompleted: totalCompleted,
+            TotalLessonsEnrolled: totalLessonsEnrolled,
+            MostRecentCompletionDate: mostRecentCompletion,
+            Enrollments: enrollmentDtos
+        );
+    }
+
+    public async Task<CertificateDto> GenerateCertificateAsync(Guid userId, Guid programId)
+    {
+        // Check if enrollment exists and is completed
+        var enrollment = await _db.Enrollments
+            .Include(e => e.Program)
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.ProgramId == programId)
+            ?? throw new KeyNotFoundException("Enrollment not found.");
+
+        if (enrollment.CompletedAt is null)
+        {
+            throw new InvalidOperationException("Program must be completed before generating a certificate.");
+        }
+
+        // Check if certificate already exists
+        var existing = await _db.Certificates
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ProgramId == programId);
+
+        if (existing is not null)
+        {
+            return MapCertificate(existing, enrollment.Program.Title);
+        }
+
+        // Generate certificate
+        var certificate = new Certificate
+        {
+            UserId = userId,
+            ProgramId = programId,
+            CertificateCode = GenerateCertificateCode(),
+            PdfUrl = await GenerateCertificatePdfAsync(userId, enrollment.Program, enrollment.CompletedAt.Value),
+            IssuedAt = DateTime.UtcNow
+        };
+
+        _db.Certificates.Add(certificate);
+        await _db.SaveChangesAsync();
+
+        return MapCertificate(certificate, enrollment.Program.Title);
+    }
+
+    public async Task<IReadOnlyList<CertificateDto>> GetMyCertificatesAsync(Guid userId)
+    {
+        var certificates = await _db.Certificates
+            .Include(c => c.Program)
+            .Where(c => c.UserId == userId)
+            .OrderByDescending(c => c.IssuedAt)
+            .ToListAsync();
+
+        return certificates.Select(c => MapCertificate(c, c.Program?.Title ?? "Unknown Program")).ToList();
+    }
+
+    public async Task<CertificateDto?> GetCertificateByIdAsync(Guid certificateId)
+    {
+        var cert = await _db.Certificates
+            .Include(c => c.Program)
+            .FirstOrDefaultAsync(c => c.Id == certificateId);
+
+        return cert is null ? null : MapCertificate(cert, cert.Program?.Title ?? "Unknown Program");
+    }
+
+    private static string GenerateCertificateCode()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        var code = new char[12];
+        for (int i = 0; i < code.Length; i++)
+        {
+            code[i] = chars[random.Next(chars.Length)];
+        }
+        return new string(code);
+    }
+
+    private static Task<string> GenerateCertificatePdfAsync(Guid userId, Program_ program, DateTime completedAt)
+    {
+        // TODO: Implement actual PDF generation (e.g., using iTextSharp or similar)
+        // For now, return a placeholder URL
+        var certificateId = Guid.NewGuid();
+        var url = $"https://certificates.corefamily.edu/{certificateId}/download";
+        return Task.FromResult(url);
+    }
+
+    private static CertificateDto MapCertificate(Certificate cert, string? programTitle) => new(
+        cert.Id,
+        cert.UserId,
+        cert.ProgramId,
+        cert.CertificateCode,
+        cert.PdfUrl,
+        cert.IssuedAt,
+        programTitle
+    );
 }
