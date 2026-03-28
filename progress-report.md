@@ -186,6 +186,23 @@ Date: 2026-03-27
 - Payment webhook event mapping is now provider-aware:
   - Stripe and Paystack webhook payloads are parsed from provider-native event schemas before status reconciliation
   - Provider signature headers are now supported directly (`Stripe-Signature`, `x-paystack-signature`, with fallback header support)
+- Payment provider integration testing is now comprehensive:
+  - Created CoreFamily.Tests xUnit project with InMemory EF Core database
+  - 15 integration tests covering payment webhook lifecycle:
+    - **Stripe HMAC-SHA256 validation**: Valid signatures, invalid signatures, and replay window attacks (300 second window)
+    - **Paystack HMAC-SHA512 validation**: Valid signatures and invalid signature rejection
+    - **Transaction status transitions**: Completed, failed, and refunded states across both providers
+    - **Session status updates**: Session confirmed when payment completes; session cancelled when refunded before completion
+    - **Provider event normalization**: Stripe checkout.session.completed, charge.refunded events; Paystack charge.success, charge.failed, refund.processed events
+    - **Error handling**: Transaction not found exceptions, webhook secret absence (dev mode allow-through)
+  - All 15 tests passing in 15.4s
+  - Executed with: `dotnet test CoreFamily.Tests --logger:"console;verbosity=normal"`
+- Current test coverage summary:
+  - **Stripe (6 tests)**: Valid/invalid signature, replay attack, status transitions (3), session updates
+  - **Paystack (3 tests)**: Valid/invalid signature, status transitions
+  - **Multi-provider (3 tests)**: Status theory tests (completed, paid, success states), refund flow, error handling
+  - **Helper coverage**: Signature generation for both providers, transaction creation utilities
 - Remaining major work:
   - Google Pay direct/aggregator production flow wiring
-  - Expanded integration and E2E testing
+  - E2E test suites for full user journeys (registers → books session → pays via provider → webhook confirms)
+  - Deployment pipeline and secrets management (GitHub Actions, Azure Key Vault)
