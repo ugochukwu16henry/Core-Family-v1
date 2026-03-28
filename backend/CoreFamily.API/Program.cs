@@ -104,6 +104,7 @@ builder.Services.AddScoped<ICounselorService, CounselorService>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, PaystackPaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, GooglePayPaymentGateway>();

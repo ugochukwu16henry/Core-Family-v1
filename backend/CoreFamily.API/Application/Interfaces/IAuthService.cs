@@ -55,7 +55,7 @@ public interface IPaymentService
 {
     Task<CheckoutSessionDto> CreateProgramCheckoutAsync(Guid userId, Guid programId, CreateCheckoutRequestDto request);
     Task<CheckoutSessionDto> CreateSessionCheckoutAsync(Guid userId, Guid sessionId, CreateCheckoutRequestDto request);
-    Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string? signature);
+    Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string rawPayload, string? signature);
     Task<IReadOnlyList<TransactionSummaryDto>> GetMyTransactionsAsync(Guid userId);
     Task<bool> HasCompletedProgramPaymentAsync(Guid userId, Guid programId);
     Task<bool> HasCompletedSessionPaymentAsync(Guid userId, Guid sessionId);

@@ -4,6 +4,12 @@ using CoreFamily.API.Domain.Entities;
 using CoreFamily.API.Domain.Enums;
 using CoreFamily.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace CoreFamily.API.Infrastructure.Services;
 
@@ -42,7 +48,8 @@ public class PaymentService : IPaymentService
         }
 
         var gateway = ResolveGateway(request.Provider);
-        var gatewayResult = await gateway.CreateCheckoutAsync(transaction, request);
+        var customerEmail = await GetUserEmailAsync(userId);
+        var gatewayResult = await gateway.CreateCheckoutAsync(transaction, request, customerEmail);
 
         transaction.ExternalTransactionId = gatewayResult.ExternalTransactionId;
         transaction.InvoiceUrl = gatewayResult.CheckoutUrl;
@@ -86,7 +93,8 @@ public class PaymentService : IPaymentService
         }
 
         var gateway = ResolveGateway(request.Provider);
-        var gatewayResult = await gateway.CreateCheckoutAsync(transaction, request);
+        var customerEmail = await GetUserEmailAsync(userId);
+        var gatewayResult = await gateway.CreateCheckoutAsync(transaction, request, customerEmail);
 
         transaction.ExternalTransactionId = gatewayResult.ExternalTransactionId;
         transaction.InvoiceUrl = gatewayResult.CheckoutUrl;
@@ -101,9 +109,9 @@ public class PaymentService : IPaymentService
         return MapCheckoutDto(transaction, gatewayResult.RequiresRedirect, gatewayResult.CheckoutUrl);
     }
 
-    public async Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string? signature)
+    public async Task HandleWebhookAsync(string provider, PaymentWebhookDto payload, string rawPayload, string? signature)
     {
-        ValidateWebhookSignature(provider, signature);
+        ValidateWebhookSignature(provider, rawPayload, signature);
 
         var normalizedProvider = NormalizeProvider(provider);
         var transaction = await _db.Transactions.FirstOrDefaultAsync(t =>
@@ -225,6 +233,19 @@ public class PaymentService : IPaymentService
         return transaction;
     }
 
+    private async Task<string> GetUserEmailAsync(Guid userId)
+    {
+        var email = await _db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.Email)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new KeyNotFoundException("User email not found for payment checkout.");
+
+        return email;
+    }
+
     private IPaymentGateway ResolveGateway(string provider)
     {
         var normalized = NormalizeProvider(provider);
@@ -237,7 +258,7 @@ public class PaymentService : IPaymentService
         return gateway;
     }
 
-    private void ValidateWebhookSignature(string provider, string? signature)
+    private void ValidateWebhookSignature(string provider, string rawPayload, string? signature)
     {
         var normalized = NormalizeProvider(provider);
         var expected = normalized switch
@@ -254,10 +275,77 @@ public class PaymentService : IPaymentService
             return;
         }
 
-        if (!string.Equals(expected, signature, StringComparison.Ordinal))
+        var isValid = normalized switch
+        {
+            "stripe" => ValidateStripeSignature(rawPayload, signature, expected),
+            "paystack" => ValidatePaystackSignature(rawPayload, signature, expected),
+            "google_pay" => string.Equals(expected, signature, StringComparison.Ordinal),
+            _ => false
+        };
+
+        if (!isValid)
         {
             throw new UnauthorizedAccessException("Invalid webhook signature.");
         }
+    }
+
+    private static bool ValidateStripeSignature(string rawPayload, string? signatureHeader, string secret)
+    {
+        if (string.IsNullOrWhiteSpace(signatureHeader))
+            return false;
+
+        var parts = signatureHeader.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var timestampPart = parts.FirstOrDefault(p => p.StartsWith("t=", StringComparison.Ordinal));
+        var signaturePart = parts.FirstOrDefault(p => p.StartsWith("v1=", StringComparison.Ordinal));
+        if (timestampPart is null || signaturePart is null)
+            return false;
+
+        var timestamp = timestampPart[2..];
+        var providedSignature = signaturePart[3..];
+        var signedPayload = $"{timestamp}.{rawPayload}";
+
+        var computed = ComputeHmacHex(signedPayload, secret, useSha512: false);
+
+        if (!long.TryParse(timestamp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixTs))
+            return false;
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var ageSeconds = Math.Abs(now - unixTs);
+        if (ageSeconds > 300)
+            return false;
+
+        return FixedTimeEqualsHex(providedSignature, computed);
+    }
+
+    private static bool ValidatePaystackSignature(string rawPayload, string? signatureHeader, string secret)
+    {
+        if (string.IsNullOrWhiteSpace(signatureHeader))
+            return false;
+
+        var computed = ComputeHmacHex(rawPayload, secret, useSha512: true);
+        return FixedTimeEqualsHex(signatureHeader, computed);
+    }
+
+    private static string ComputeHmacHex(string input, string secret, bool useSha512)
+    {
+        var keyBytes = Encoding.UTF8.GetBytes(secret);
+        var payloadBytes = Encoding.UTF8.GetBytes(input);
+
+        byte[] hash = useSha512
+            ? new HMACSHA512(keyBytes).ComputeHash(payloadBytes)
+            : new HMACSHA256(keyBytes).ComputeHash(payloadBytes);
+
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static bool FixedTimeEqualsHex(string left, string right)
+    {
+        if (left.Length != right.Length)
+            return false;
+
+        var leftBytes = Encoding.UTF8.GetBytes(left.ToLowerInvariant());
+        var rightBytes = Encoding.UTF8.GetBytes(right.ToLowerInvariant());
+        return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
     }
 
     private static string NormalizeProvider(string provider)
@@ -304,7 +392,7 @@ public class PaymentService : IPaymentService
 public interface IPaymentGateway
 {
     string Provider { get; }
-    Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request);
+    Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request, string customerEmail);
 }
 
 public record GatewayCheckoutResult(
@@ -317,54 +405,163 @@ public record GatewayCheckoutResult(
 public class StripePaymentGateway : IPaymentGateway
 {
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public StripePaymentGateway(IConfiguration configuration) => _configuration = configuration;
+    public StripePaymentGateway(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+    {
+        _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
+    }
 
     public string Provider => "stripe";
 
-    public Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request)
+    public async Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request, string customerEmail)
     {
         // Until Stripe SDK wiring is added, we support dev-safe auto completion when key is absent.
         var secretKey = _configuration["Stripe:SecretKey"];
+        var checkoutBaseUrl = _configuration["Stripe:CheckoutBaseUrl"];
         if (string.IsNullOrWhiteSpace(secretKey))
         {
-            return Task.FromResult(new GatewayCheckoutResult($"mock_stripe_{Guid.NewGuid():N}", null, true, false));
+            return new GatewayCheckoutResult($"mock_stripe_{Guid.NewGuid():N}", null, true, false);
         }
 
-        var checkoutUrl = request.SuccessUrl ?? "https://checkout.stripe.com/pay/mock-session";
-        return Task.FromResult(new GatewayCheckoutResult($"stripe_{Guid.NewGuid():N}", checkoutUrl, false, true));
+        var apiBaseUrl = _configuration["Stripe:ApiBaseUrl"];
+        if (string.IsNullOrWhiteSpace(apiBaseUrl))
+            apiBaseUrl = "https://api.stripe.com";
+
+        var successUrl = request.SuccessUrl ?? _configuration["Stripe:DefaultSuccessUrl"] ?? "https://corefamily.com/payments/success";
+        var cancelUrl = request.CancelUrl ?? _configuration["Stripe:DefaultCancelUrl"] ?? "https://corefamily.com/payments/cancel";
+        var amountInMinorUnits = (int)Math.Round(transaction.Amount * 100m, MidpointRounding.AwayFromZero);
+
+        var payload = new Dictionary<string, string>
+        {
+            ["mode"] = "payment",
+            ["success_url"] = successUrl,
+            ["cancel_url"] = cancelUrl,
+            ["customer_email"] = customerEmail,
+            ["line_items[0][quantity]"] = "1",
+            ["line_items[0][price_data][currency]"] = transaction.Currency.ToLowerInvariant(),
+            ["line_items[0][price_data][unit_amount]"] = amountInMinorUnits.ToString(CultureInfo.InvariantCulture),
+            ["line_items[0][price_data][product_data][name]"] = $"Core Family {transaction.Type}",
+            ["metadata[transaction_id]"] = transaction.Id.ToString()
+        };
+
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", secretKey);
+        using var response = await client.PostAsync($"{apiBaseUrl.TrimEnd('/')}/v1/checkout/sessions", new FormUrlEncodedContent(payload));
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Stripe checkout init failed ({(int)response.StatusCode}).");
+
+        using var json = JsonDocument.Parse(responseBody);
+        var root = json.RootElement;
+
+        var checkoutUrl = root.TryGetProperty("url", out var urlEl)
+            ? urlEl.GetString()
+            : checkoutBaseUrl;
+
+        var externalTransactionId = root.TryGetProperty("id", out var idEl)
+            ? idEl.GetString()
+            : $"stripe_{Guid.NewGuid():N}";
+
+        var paymentStatus = root.TryGetProperty("payment_status", out var statusEl)
+            ? statusEl.GetString()
+            : null;
+
+        var isCompleted = string.Equals(paymentStatus, "paid", StringComparison.OrdinalIgnoreCase);
+        return new GatewayCheckoutResult(
+            externalTransactionId ?? $"stripe_{Guid.NewGuid():N}",
+            checkoutUrl,
+            isCompleted,
+            !isCompleted && !string.IsNullOrWhiteSpace(checkoutUrl));
     }
 }
 
 public class PaystackPaymentGateway : IPaymentGateway
 {
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public PaystackPaymentGateway(IConfiguration configuration) => _configuration = configuration;
+    public PaystackPaymentGateway(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+    {
+        _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
+    }
 
     public string Provider => "paystack";
 
-    public Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request)
+    public async Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request, string customerEmail)
     {
         var secretKey = _configuration["Paystack:SecretKey"];
+        var checkoutBaseUrl = _configuration["Paystack:CheckoutBaseUrl"];
         if (string.IsNullOrWhiteSpace(secretKey))
         {
-            return Task.FromResult(new GatewayCheckoutResult($"mock_paystack_{Guid.NewGuid():N}", null, true, false));
+            return new GatewayCheckoutResult($"mock_paystack_{Guid.NewGuid():N}", null, true, false);
         }
 
-        var checkoutUrl = request.SuccessUrl ?? "https://checkout.paystack.com/mock-session";
-        return Task.FromResult(new GatewayCheckoutResult($"paystack_{Guid.NewGuid():N}", checkoutUrl, false, true));
+        var apiBaseUrl = _configuration["Paystack:ApiBaseUrl"];
+        if (string.IsNullOrWhiteSpace(apiBaseUrl))
+            apiBaseUrl = "https://api.paystack.co";
+
+        var callbackUrl = request.SuccessUrl ?? _configuration["Paystack:DefaultCallbackUrl"] ?? "https://corefamily.com/payments/success";
+        var amountInMinorUnits = (int)Math.Round(transaction.Amount * 100m, MidpointRounding.AwayFromZero);
+        var reference = $"cf_{transaction.Id:N}";
+
+        var payload = new
+        {
+            email = customerEmail,
+            amount = amountInMinorUnits,
+            currency = transaction.Currency,
+            callback_url = callbackUrl,
+            reference,
+            metadata = new { transaction_id = transaction.Id.ToString() }
+        };
+
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", secretKey);
+        using var response = await client.PostAsJsonAsync($"{apiBaseUrl.TrimEnd('/')}/transaction/initialize", payload);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Paystack checkout init failed ({(int)response.StatusCode}).");
+
+        using var json = JsonDocument.Parse(responseBody);
+        var root = json.RootElement;
+        var data = root.TryGetProperty("data", out var dataEl) ? dataEl : default;
+
+        var checkoutUrl = data.ValueKind != JsonValueKind.Undefined && data.TryGetProperty("authorization_url", out var authUrlEl)
+            ? authUrlEl.GetString()
+            : checkoutBaseUrl;
+
+        var externalTransactionId = data.ValueKind != JsonValueKind.Undefined && data.TryGetProperty("reference", out var referenceEl)
+            ? referenceEl.GetString()
+            : reference;
+
+        return new GatewayCheckoutResult(
+            externalTransactionId ?? reference,
+            checkoutUrl,
+            false,
+            !string.IsNullOrWhiteSpace(checkoutUrl));
     }
 }
 
 public class GooglePayPaymentGateway : IPaymentGateway
 {
+    private readonly IConfiguration _configuration;
+
+    public GooglePayPaymentGateway(IConfiguration configuration) => _configuration = configuration;
+
     public string Provider => "google_pay";
 
-    public Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request)
+    public Task<GatewayCheckoutResult> CreateCheckoutAsync(Transaction transaction, CreateCheckoutRequestDto request, string customerEmail)
     {
         // Google Pay is often processed through Stripe/Paystack rails; keep fallback implementation.
-        var checkoutUrl = request.SuccessUrl ?? "https://pay.google.com/mock-session";
+        var checkoutBaseUrl = _configuration["GooglePay:CheckoutBaseUrl"];
+        var checkoutUrl = request.SuccessUrl
+            ?? (string.IsNullOrWhiteSpace(checkoutBaseUrl)
+                ? "https://pay.google.com/mock-session"
+                : checkoutBaseUrl);
         return Task.FromResult(new GatewayCheckoutResult($"gpay_{Guid.NewGuid():N}", checkoutUrl, false, true));
     }
 }

@@ -170,6 +170,22 @@ Date: 2026-03-27
     - challenge and preference capture
     - ranked counselor recommendations
     - direct booking handoff into sessions workflow
+- Payment webhook security hardening is now operational:
+  - Webhook endpoint now validates provider signatures against raw payload before processing events
+  - Stripe validation now supports timestamped `t=...,v1=...` HMAC-SHA256 signatures with replay window checks
+  - Paystack validation now supports HMAC-SHA512 signature verification
+  - Webhook events are rejected when signatures are invalid
+- Payment gateway URL configuration is now env-driven:
+  - Added provider checkout URL keys for Stripe, Paystack, and Google Pay in local env and app settings
+  - Gateway fallback checkout URLs now read from configuration when request success URL is not supplied
+- Payment provider initialization is now API-aware for live keys:
+  - Stripe gateway now calls Stripe Checkout Sessions API when `Stripe:SecretKey` is configured
+  - Paystack gateway now calls Paystack transaction initialize API when `Paystack:SecretKey` is configured
+  - Provider API base URLs and default callback/success URLs are now configurable through env/app settings
+  - Mock fallback behavior remains available for local development when keys are absent
+- Payment webhook event mapping is now provider-aware:
+  - Stripe and Paystack webhook payloads are parsed from provider-native event schemas before status reconciliation
+  - Provider signature headers are now supported directly (`Stripe-Signature`, `x-paystack-signature`, with fallback header support)
 - Remaining major work:
-  - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
+  - Google Pay direct/aggregator production flow wiring
   - Expanded integration and E2E testing

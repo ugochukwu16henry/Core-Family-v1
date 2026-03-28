@@ -112,6 +112,33 @@ dotnet run
 
 Use `.env.local` for your machine-specific values. **Never commit local env files.**
 
+Payment webhook notes:
+
+- Webhook endpoint: `POST /api/v1/payments/webhooks/{provider}`
+- Signature headers supported by API:
+  - Stripe: `Stripe-Signature`
+  - Paystack: `x-paystack-signature`
+  - Fallback/custom: `X-Payment-Signature`
+- Stripe format supported: `t=<unix_ts>,v1=<hmac_sha256>` using raw request payload
+- Paystack format supported: hex HMAC-SHA512 of raw request payload
+- Provider payload mapping supported:
+  - Stripe events (e.g. `checkout.session.completed`, `checkout.session.async_payment_failed`, `charge.refunded`)
+  - Paystack events (e.g. `charge.success`, `charge.failed`, `refund.processed`)
+- If webhook secrets are blank in local/dev config, signature validation is bypassed for local testing only
+
+Payment checkout URL env keys:
+
+- `Stripe__CheckoutBaseUrl`
+- `Stripe__ApiBaseUrl`
+- `Stripe__DefaultSuccessUrl`
+- `Stripe__DefaultCancelUrl`
+- `Paystack__CheckoutBaseUrl`
+- `Paystack__ApiBaseUrl`
+- `Paystack__DefaultCallbackUrl`
+- `GooglePay__CheckoutBaseUrl`
+
+These values are used for provider checkout initialization and redirect fallback behavior when `successUrl` is not explicitly provided by the client request.
+
 See `/docs/environment-setup.md` for full configuration guide.
 
 ---
