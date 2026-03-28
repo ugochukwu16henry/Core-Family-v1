@@ -1,0 +1,79 @@
+.need-help {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero {
+  background: linear-gradient(130deg, #f4f8ff 0%, #fff6ec 100%);
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.fields {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.form-grid input,
+.form-grid textarea {
+  border: 1px solid #d7dfe9;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.matches {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+}
+
+.match-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.score {
+  background: #e9f7ef;
+  color: #1d6f42;
+  border-radius: 99px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.reasons {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #425466;
+}
+
+.feedback.error {
+  color: #c92a2a;
+}
+
+.feedback.success {
+  color: #1d6f42;
+}

@@ -87,6 +87,21 @@ public class CounselorSearchDto
     public bool? AcceptsNewClients { get; init; }
 }
 
+public record CounselorMatchRequestDto(
+    string Challenge,
+    string? PreferredLanguage,
+    string? Country,
+    decimal? MaxHourlyRateUsd,
+    int DurationMinutes = 60,
+    int Top = 5
+);
+
+public record CounselorMatchResultDto(
+    CounselorSummaryDto Counselor,
+    decimal Score,
+    string[] Reasons
+);
+
 public record BookSessionDto(
     Guid CounselorId,
     DateTime ScheduledAt,

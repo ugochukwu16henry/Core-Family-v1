@@ -1,0 +1,72 @@
+<section class="need-help page-shell">
+  <div class="card hero">
+    <span class="eyebrow">I need help</span>
+    <h1>Find a counselor match in minutes</h1>
+    <p>Share your challenge and preferences. We score available counselors and let you book directly.</p>
+  </div>
+
+  <form class="card form-grid" (ngSubmit)="findMatches()">
+    <label>
+      What do you need help with?
+      <textarea name="challenge" rows="3" [(ngModel)]="form.challenge" placeholder="Marriage communication, parenting conflict, emotional healing..." required></textarea>
+    </label>
+
+    <div class="fields">
+      <label>
+        Preferred language
+        <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" placeholder="en" />
+      </label>
+      <label>
+        Country
+        <input type="text" name="country" [(ngModel)]="form.country" placeholder="Nigeria" />
+      </label>
+      <label>
+        Max hourly budget (USD)
+        <input type="number" min="0" name="maxHourlyRateUsd" [(ngModel)]="form.maxHourlyRateUsd" />
+      </label>
+      <label>
+        Session duration (minutes)
+        <input type="number" min="30" step="30" name="durationMinutes" [(ngModel)]="form.durationMinutes" />
+      </label>
+      <label>
+        Match count
+        <input type="number" min="1" max="10" name="top" [(ngModel)]="form.top" />
+      </label>
+      <label>
+        Preferred session time
+        <input type="datetime-local" name="scheduledAt" [(ngModel)]="form.scheduledAt" />
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="button-primary" type="submit" [disabled]="loading()">{{ loading() ? 'Finding matches...' : 'Find matches' }}</button>
+      <button class="button-secondary" type="button" (click)="openSessions()">Open sessions</button>
+    </div>
+  </form>
+
+  <p class="feedback error" *ngIf="error()">{{ error() }}</p>
+  <p class="feedback success" *ngIf="success()">{{ success() }}</p>
+
+  <div class="matches" *ngIf="matches().length > 0">
+    <article class="card match-card" *ngFor="let item of matches()">
+      <div class="row">
+        <h2>{{ item.counselor.firstName }} {{ item.counselor.lastName }}</h2>
+        <span class="score">Score {{ item.score }}</span>
+      </div>
+      <p><strong>Specialization:</strong> {{ item.counselor.specialization || 'General family counseling' }}</p>
+      <p><strong>Rate:</strong> ${{ item.counselor.hourlyRateUsd }}/hr</p>
+      <p><strong>Language:</strong> {{ item.counselor.languages.join(', ') || item.counselor.preferredLanguage }}</p>
+      <p><strong>Location:</strong> {{ item.counselor.city || '-' }}, {{ item.counselor.country || '-' }}</p>
+      <p><strong>Rating:</strong> {{ item.counselor.averageRating || 0 }} ({{ item.counselor.reviewCount }} reviews)</p>
+      <p *ngIf="item.counselor.bio">{{ item.counselor.bio }}</p>
+
+      <ul class="reasons">
+        <li *ngFor="let reason of item.reasons">{{ reason }}</li>
+      </ul>
+
+      <button class="button-primary" type="button" [disabled]="booking()" (click)="bookWithCounselor(item.counselor.id)">
+        {{ booking() ? 'Booking...' : 'Book this counselor' }}
+      </button>
+    </article>
+  </div>
+</section>

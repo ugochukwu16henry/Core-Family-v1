@@ -18,6 +18,12 @@ public class CounselorsController : BaseApiController
     public async Task<IActionResult> Search([FromQuery] CounselorSearchDto search)
         => Ok(await _counselors.SearchAsync(search));
 
+    [Authorize]
+    [HttpPost("match")]
+    [ProducesResponseType(typeof(IReadOnlyList<CounselorMatchResultDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Match([FromBody] CounselorMatchRequestDto request)
+        => Ok(await _counselors.GetMatchesAsync(GetCurrentUserId(), request));
+
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CounselorSummaryDto), StatusCodes.Status200OK)]

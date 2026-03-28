@@ -10,6 +10,9 @@ namespace CoreFamily.API.Infrastructure.Services;
 public class CounselorService : ICounselorService
 {
     private const decimal PlatformCommissionRate = 0.05m;
+    private static readonly string[] ChallengeKeywords = [
+        "marriage", "relationship", "communication", "conflict", "parent", "parenting", "family", "faith", "anxiety", "depression", "trauma"
+    ];
     private readonly CoreFamilyDbContext _db;
     private readonly IPaymentService _payments;
 
@@ -65,6 +68,43 @@ public class CounselorService : ICounselorService
             .FirstOrDefaultAsync(cp => cp.Id == counselorId);
 
         return counselor is null ? null : MapCounselorSummary(counselor);
+    }
+
+    public async Task<IReadOnlyList<CounselorMatchResultDto>> GetMatchesAsync(Guid userId, CounselorMatchRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Challenge))
+            throw new ArgumentException("Challenge is required for matching.");
+
+        var userProfile = await _db.Users
+            .Include(u => u.Profile)
+            .Where(u => u.Id == userId)
+            .Select(u => u.Profile)
+            .FirstOrDefaultAsync();
+
+        var language = !string.IsNullOrWhiteSpace(request.PreferredLanguage)
+            ? request.PreferredLanguage.Trim().ToLowerInvariant()
+            : userProfile?.PreferredLanguage?.Trim().ToLowerInvariant();
+
+        var country = !string.IsNullOrWhiteSpace(request.Country)
+            ? request.Country.Trim().ToLowerInvariant()
+            : userProfile?.Country?.Trim().ToLowerInvariant();
+
+        var candidates = await SearchAsync(new CounselorSearchDto
+        {
+            Language = language,
+            Country = country,
+            AcceptsNewClients = true
+        });
+
+        var top = Math.Clamp(request.Top, 1, 10);
+        var challenge = request.Challenge.Trim().ToLowerInvariant();
+
+        return candidates
+            .Select(c => ScoreCounselor(c, challenge, language, country, request.MaxHourlyRateUsd))
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Counselor.HourlyRateUsd)
+            .Take(top)
+            .ToList();
     }
 
     public async Task<CounselorSummaryDto> UpsertMyProfileAsync(Guid userId, CounselorProfileUpsertDto dto)
@@ -365,6 +405,79 @@ public class CounselorService : ICounselorService
     {
         var fullName = $"{firstName} {lastName}".Trim();
         return string.IsNullOrWhiteSpace(fullName) ? "Unknown User" : fullName;
+    }
+
+    private static CounselorMatchResultDto ScoreCounselor(
+        CounselorSummaryDto counselor,
+        string challenge,
+        string? preferredLanguage,
+        string? preferredCountry,
+        decimal? maxHourlyRateUsd)
+    {
+        decimal score = 40;
+        var reasons = new List<string>();
+
+        if (counselor.LicenseStatus.Equals(VerificationStatus.Verified.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            score += 15;
+            reasons.Add("Verified counselor profile.");
+        }
+
+        if (counselor.AcceptsNewClients)
+        {
+            score += 10;
+            reasons.Add("Accepting new clients.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(preferredLanguage) && counselor.Languages.Any(l => l.Equals(preferredLanguage, StringComparison.OrdinalIgnoreCase)))
+        {
+            score += 12;
+            reasons.Add("Matches your preferred language.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(preferredCountry) && !string.IsNullOrWhiteSpace(counselor.Country)
+            && counselor.Country.Equals(preferredCountry, StringComparison.OrdinalIgnoreCase))
+        {
+            score += 6;
+            reasons.Add("Located in your preferred country.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(counselor.Specialization))
+        {
+            var specialization = counselor.Specialization.ToLowerInvariant();
+            if (specialization.Contains(challenge) || ChallengeKeywords.Any(k => challenge.Contains(k) && specialization.Contains(k)))
+            {
+                score += 14;
+                reasons.Add("Specialization aligns with your challenge.");
+            }
+        }
+
+        var ratingPoints = Math.Min(counselor.AverageRating * 2m, 10m);
+        score += ratingPoints;
+        if (ratingPoints > 0)
+        {
+            reasons.Add($"Strong rating history ({counselor.AverageRating}).");
+        }
+
+        if (maxHourlyRateUsd.HasValue && maxHourlyRateUsd.Value > 0)
+        {
+            if (counselor.HourlyRateUsd <= maxHourlyRateUsd.Value)
+            {
+                score += 8;
+                reasons.Add("Within your budget range.");
+            }
+            else
+            {
+                score -= 5;
+            }
+        }
+
+        if (reasons.Count == 0)
+        {
+            reasons.Add("General compatibility based on current profile data.");
+        }
+
+        return new CounselorMatchResultDto(counselor, Math.Round(score, 2, MidpointRounding.AwayFromZero), reasons.ToArray());
     }
 
     private static string[] SplitLanguages(string rawLanguages) => rawLanguages

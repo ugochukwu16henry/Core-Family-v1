@@ -157,7 +157,19 @@ Date: 2026-03-27
   - Transaction history list for signed-in users
   - Per-transaction refund/dispute submission for completed payments
   - Refund-request state visibility when a request is already submitted
+- AI-assisted counselor matching user flow is now operational:
+  - Backend personalized match endpoint:
+    - `POST /api/v1/counselors/match`
+  - Matching score combines profile signals such as:
+    - verification status
+    - accepts-new-clients
+    - language and country fit
+    - specialization alignment to challenge text
+    - rating quality and budget fit
+  - Angular auth-protected "I Need Help" page at `/help` with:
+    - challenge and preference capture
+    - ranked counselor recommendations
+    - direct booking handoff into sessions workflow
 - Remaining major work:
   - Real provider SDK/API wiring for Stripe, Paystack, and Google Pay checkout + webhook signature standards
-  - AI counselor matching endpoint integration into "I need help" user flow
   - Expanded integration and E2E testing

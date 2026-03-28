@@ -22,6 +22,7 @@ public interface IUserService
 public interface ICounselorService
 {
     Task<IReadOnlyList<CounselorSummaryDto>> SearchAsync(CounselorSearchDto search);
+    Task<IReadOnlyList<CounselorMatchResultDto>> GetMatchesAsync(Guid userId, CounselorMatchRequestDto request);
     Task<CounselorSummaryDto?> GetByIdAsync(Guid counselorId);
     Task<CounselorSummaryDto> UpsertMyProfileAsync(Guid userId, CounselorProfileUpsertDto dto);
     Task<IReadOnlyList<SessionSummaryDto>> GetCounselorSessionsAsync(Guid userId);
