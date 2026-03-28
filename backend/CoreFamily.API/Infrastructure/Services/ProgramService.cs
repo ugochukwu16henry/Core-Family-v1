@@ -11,11 +11,19 @@ public class ProgramService : IProgramService
 {
     private readonly CoreFamilyDbContext _db;
     private readonly IPaymentService _payments;
+    private readonly IEmailService _emailService;
+    private readonly IPdfService _pdfService;
 
-    public ProgramService(CoreFamilyDbContext db, IPaymentService payments)
+    public ProgramService(
+        CoreFamilyDbContext db,
+        IPaymentService payments,
+        IEmailService emailService,
+        IPdfService pdfService)
     {
         _db = db;
         _payments = payments;
+        _emailService = emailService;
+        _pdfService = pdfService;
     }
 
     public async Task<IReadOnlyList<ProgramSummaryDto>> GetPublishedProgramsAsync(ProgramSearchDto search)
@@ -625,6 +633,26 @@ public class ProgramService : IProgramService
         _db.Certificates.Add(certificate);
         await _db.SaveChangesAsync();
 
+        // Send certificate notification email
+        try
+        {
+            var user = await _db.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.Id == userId);
+            if (user?.Email != null)
+            {
+                var recipientName = BuildFullName(user.Profile?.FirstName, user.Profile?.LastName);
+                await _emailService.SendCertificateIssuedAsync(
+                        user.Email,
+                    recipientName,
+                    enrollment.Program.Title,
+                    certificate.CertificateCode
+                );
+            }
+        }
+        catch (Exception)
+        {
+            // Log and continue - email failure shouldn't block certificate generation
+        }
+
         return MapCertificate(certificate, enrollment.Program.Title);
     }
 
@@ -767,16 +795,12 @@ public class ProgramService : IProgramService
             .FirstOrDefaultAsync(c => c.UserId == userId && c.ProgramId == programId)
             ?? throw new KeyNotFoundException("Certificate not found");
 
-        // TODO: Implement actual PDF generation using iTextSharp or PDFSharp
-        // placeholder implementation returns empty byte array
-        // Real implementation would:
-        // 1. Create PDF document from template
-        // 2. Add recipient name from user profile
-        // 3. Add program title
-        // 4. Add certificate code and issue date
-        // 5. Add signature/digital stamp
-        // 6. Return PDF bytes
-
-        return Array.Empty<byte>();
+        var recipientName = BuildFullName(user.Profile?.FirstName, user.Profile?.LastName);
+        return await _pdfService.GenerateCertificatePdfAsync(
+            recipientName,
+            program.Title,
+            cert.CertificateCode,
+            cert.IssuedAt
+        );
     }
 }

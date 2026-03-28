@@ -108,6 +108,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, PaystackPaymentGateway>();
 builder.Services.AddScoped<IPaymentGateway, GooglePayPaymentGateway>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 // ── FluentValidation ──────────────────────────────────────────────
 builder.Services.AddFluentValidationAutoValidation();
