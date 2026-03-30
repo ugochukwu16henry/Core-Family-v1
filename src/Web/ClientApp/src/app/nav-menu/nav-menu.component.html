@@ -10,12 +10,12 @@
       <li><a [routerLink]="['/todo']" [routerLinkActive]="['pico-active']">Tasks</a></li>
     </ul>
     <ul>
-      @if (isAuthenticated$ | async) {
+      <ng-container *ngIf="isAuthenticated; else loggedOut">
         <li><a href="#" (click)="logout($event)">Log out</a></li>
-      } @else {
-        <li><a [routerLink]="['/login']" [routerLinkActive]="['pico-active']">Log in</a></li>
-        <li><a [routerLink]="['/register']" [routerLinkActive]="['pico-active']">Register</a></li>
-      }
+      </ng-container>
+      <ng-template #loggedOut>
+        <li><a href="#" (click)="login($event)">Log in</a></li>
+      </ng-template>
       <li aria-hidden="true" class="nav-separator"></li>
       <li><app-theme-toggle /></li>
     </ul>
