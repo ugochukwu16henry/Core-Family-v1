@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal } from 'lucide-angular';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { OAuthModule } from 'angular-oauth2-oidc';
+import { authConfig } from './auth.config';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 
 import { AppComponent } from './app.component';
@@ -52,14 +55,16 @@ export function getApiBaseUrl(): string {
             { path: 'login', component: LoginComponent },
             { path: 'register', component: RegisterComponent },
             { path: 'admin/users', component: AdminUsersComponent, canActivate: [AuthGuard] }
-        ])
+        ]),
+        OAuthModule.forRoot(),
     ],
     providers: [
         { provide: APP_ID, useValue: 'ng-cli-universal' },
         { provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true },
         { provide: API_BASE_URL, useFactory: getApiBaseUrl, deps: [] },
         provideAppInitializer(() => inject(AuthService).initialize()),
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withInterceptorsFromDi()),
+        OAuthService
     ]
 })
 export class AppModule { }

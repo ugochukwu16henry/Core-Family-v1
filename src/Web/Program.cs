@@ -1,6 +1,7 @@
 using temp_clean_arch.Infrastructure.Data;
 using Scalar.AspNetCore;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -10,6 +11,13 @@ builder.AddKeyVaultIfConfigured();
 builder.AddApplicationServices();
 builder.AddInfrastructureServices();
 builder.AddWebServices();
+
+// Add Duende IdentityServer
+builder.Services.AddIdentityServer()
+    .AddInMemoryClients(temp_clean_arch.Web.Config.Clients)
+    .AddInMemoryIdentityResources(temp_clean_arch.Web.Config.IdentityResources)
+    .AddInMemoryApiScopes(temp_clean_arch.Web.Config.ApiScopes)
+    .AddAspNetIdentity<temp_clean_arch.Infrastructure.Identity.ApplicationUser>();
 
 var app = builder.Build();
 
@@ -30,7 +38,11 @@ app.UseCors(static builder =>
         .AllowAnyHeader()
         .AllowAnyOrigin());
 
+
 app.UseFileServer();
+
+// Add IdentityServer middleware
+app.UseIdentityServer();
 
 app.MapOpenApi();
 app.MapScalarApiReference();
