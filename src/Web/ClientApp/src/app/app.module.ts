@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal } from 'lucide-angular';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
+
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
@@ -18,6 +19,7 @@ import { LoginComponent } from 'src/api-authorization/login/login.component';
 import { RegisterComponent } from 'src/api-authorization/register/register.component';
 import { AuthGuard } from 'src/api-authorization/auth.guard';
 import { AuthService } from 'src/api-authorization/auth.service';
+import { AdminUsersComponent } from './admin/admin-users.component';
 
 export function getApiBaseUrl(): string {
   const url = document.getElementsByTagName('base')[0].href;
@@ -34,7 +36,8 @@ export function getApiBaseUrl(): string {
         TasksComponent,
         ThemeToggleComponent,
         LoginComponent,
-        RegisterComponent
+        RegisterComponent,
+        AdminUsersComponent
     ],
     bootstrap: [AppComponent],
     imports: [
@@ -47,7 +50,8 @@ export function getApiBaseUrl(): string {
             { path: 'weather', component: WeatherComponent, canActivate: [AuthGuard] },
             { path: 'todo', component: TasksComponent, canActivate: [AuthGuard] },
             { path: 'login', component: LoginComponent },
-            { path: 'register', component: RegisterComponent }
+            { path: 'register', component: RegisterComponent },
+            { path: 'admin/users', component: AdminUsersComponent, canActivate: [AuthGuard] }
         ])
     ],
     providers: [

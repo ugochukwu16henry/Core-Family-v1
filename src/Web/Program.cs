@@ -25,7 +25,7 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseCors(static builder => 
+app.UseCors(static builder =>
     builder.AllowAnyMethod()
         .AllowAnyHeader()
         .AllowAnyOrigin());
@@ -38,8 +38,10 @@ app.MapScalarApiReference();
 app.UseExceptionHandler(options => { });
 
 
+
 app.MapDefaultEndpoints();
 app.MapEndpoints(typeof(Program).Assembly);
+app.MapGroup("/api").WithGroup<temp_clean_arch.Web.Endpoints.AdminUsers>();
 
 app.MapFallbackToFile("index.html");
 
