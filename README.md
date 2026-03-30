@@ -1,191 +1,57 @@
-# Core Family
+﻿# temp_clean_arch
 
-### A Family Reformation to the World
+The project was generated using the [Clean.Architecture.Solution.Template](https://github.com/jasontaylordev/CleanArchitecture) version 10.8.0.
 
-> Global Family & Marriage Counseling Platform — strengthening marriages, empowering parents, reducing divorce rates worldwide.
+## Build
 
----
+Run `dotnet build` to build the solution.
 
-## Architecture
+## Run
 
-| Layer               | Technology                     | Responsibility                                                                    |
-| ------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
-| **Frontend**        | Angular 19 (TypeScript)        | Public website, client dashboard, counselor discovery, lessons, booking, payments |
-| **Admin Dashboard** | Blazor Web App (.NET 10)       | Moderation, counselor verification, analytics, payout review, support tools       |
-| **Backend API**     | ASP.NET Core 10 Web API        | Auth, users, content, sessions, payments, reviews, notifications                  |
-| **Database**        | PostgreSQL 16                  | Shared primary data store                                                         |
-| **Cache**           | Redis 7                        | Session cache, rate limiting, background job queue                                |
-| **Storage**         | Azure Blob Storage             | Videos, documents, certificates, avatars                                          |
-| **CDN**             | Azure CDN                      | HLS video delivery, static assets                                                 |
-| **Payments**        | Stripe + Paystack + Google Pay | Global + Africa payment processing                                                |
-
----
-
-## Repository Structure
-
-```
-Core-Family-v1/
-├── backend/
-│   └── CoreFamily.API/          ← ASP.NET Core Web API
-├── frontend/                    ← Angular 19 Web App
-├── admin-dashboard/
-│   └── CoreFamily.Admin/        ← Blazor Admin Dashboard
-├── database/
-│   ├── migrations/              ← EF Core migration SQL scripts
-│   └── init/                   ← Docker init scripts
-├── devops/
-│   ├── github-actions/          ← CI/CD workflows
-│   └── azure/                  ← Bicep/ARM templates
-├── docs/
-│   ├── architecture.md
-│   ├── api-reference.md
-│   └── db-schema.md
-├── docker-compose.yml           ← Local dev environment
-├── CoreFamily.sln               ← .NET Solution file
-└── .gitignore
-```
-
----
-
-## Local Development Setup
-
-### Prerequisites
-
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 20 LTS](https://nodejs.org/) + Angular CLI (`npm install -g @angular/cli`)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [PostgreSQL client](https://www.pgadmin.org/) (optional, for DB inspection)
-
-### 1. Start infrastructure (PostgreSQL + Redis)
+To run the application:
 
 ```bash
-docker-compose up postgres redis -d
+dotnet run --project .\src\AppHost
 ```
 
-### 2. Start API and frontend with local env auto-loading
+The Aspire dashboard will open automatically, showing the application URLs and logs.
 
-From the repository root:
+## Code Styles & Formatting
 
-```powershell
-# Terminal 1
-./scripts/start-api-local.ps1
+The template includes [EditorConfig](https://editorconfig.org/) support to help maintain consistent coding styles for multiple developers working on the same project across various editors and IDEs. The **.editorconfig** file defines the coding styles applicable to this solution.
 
-# Terminal 2
-./scripts/start-frontend-local.ps1
+## Code Scaffolding
+
+The template includes support to scaffold new commands and queries.
+
+Start in the `.\src\Application\` folder.
+
+Create a new command:
+
+```
+dotnet new ca-usecase --name CreateTodoList --feature-name TodoLists --usecase-type command --return-type int
 ```
 
-These scripts automatically:
+Create a new query:
 
-- load variables from `.env.local`
-- pass env values to ASP.NET Core
-- sync Angular `frontend/src/environments/environment.development.ts` from `CORE_FAMILY_API_URL`
+```
+dotnet new ca-usecase -n GetTodos -fn TodoLists -ut query -rt TodosVm
+```
 
-### 3. Run the API (manual)
+If you encounter the error *"No templates or subcommands found matching: 'ca-usecase'."*, install the template and try again:
 
 ```bash
-cd backend/CoreFamily.API
-dotnet run
-# API available at: http://localhost:5000
-# Swagger UI: http://localhost:5000/swagger
+dotnet new install Clean.Architecture.Solution.Template::10.8.0
 ```
 
-### 4. Run the Angular frontend (manual)
+## Test
 
+The solution contains unit, integration, and functional tests.
+
+To run the tests:
 ```bash
-cd frontend
-npm install
-ng serve
-# App available at: http://localhost:4200
+dotnet test
 ```
 
-### 5. Run the Blazor Admin
-
-```bash
-cd admin-dashboard/CoreFamily.Admin
-dotnet run
-# Admin available at: http://localhost:5001
-```
-
----
-
-## Testing
-
-### Run Backend Integration Tests
-
-Execute all integration tests for payment webhook processing, signature validation, and transaction state transitions:
-
-```bash
-cd backend
-dotnet test CoreFamily.Tests/CoreFamily.Tests.csproj --logger:"console;verbosity=normal"
-```
-
-**Test Coverage** (15 integration tests):
-
-- **Stripe Webhooks**: HMAC-SHA256 signature validation, replay window enforcement (300s), checkout.session.completed/charge.refunded event mapping
-- **Paystack Webhooks**: HMAC-SHA512 signature validation, charge.success/charge.failed/refund.processed event mapping
-- **Transaction state transitions**: Pending → Completed/Failed/Refunded across both providers
-- **Session updates**: Auto-confirm session on payment completion; auto-cancel on refund before completion
-- **Error handling**: Transaction not found exceptions, missing webhook secrets (dev mode bypass)
-
-Expected output: `Total: 15, Passed: 15, Failed: 0`
-
----
-
-## Environment Variables
-
-Use `.env.local` for your machine-specific values. **Never commit local env files.**
-
-Payment webhook notes:
-
-- Webhook endpoint: `POST /api/v1/payments/webhooks/{provider}`
-- Signature headers supported by API:
-  - Stripe: `Stripe-Signature`
-  - Paystack: `x-paystack-signature`
-  - Fallback/custom: `X-Payment-Signature`
-- Stripe format supported: `t=<unix_ts>,v1=<hmac_sha256>` using raw request payload
-- Paystack format supported: hex HMAC-SHA512 of raw request payload
-- Provider payload mapping supported:
-  - Stripe events (e.g. `checkout.session.completed`, `checkout.session.async_payment_failed`, `charge.refunded`)
-  - Paystack events (e.g. `charge.success`, `charge.failed`, `refund.processed`)
-- If webhook secrets are blank in local/dev config, signature validation is bypassed for local testing only
-
-Payment checkout URL env keys:
-
-- `Stripe__CheckoutBaseUrl`
-- `Stripe__ApiBaseUrl`
-- `Stripe__DefaultSuccessUrl`
-- `Stripe__DefaultCancelUrl`
-- `Paystack__CheckoutBaseUrl`
-- `Paystack__ApiBaseUrl`
-- `Paystack__DefaultCallbackUrl`
-- `GooglePay__CheckoutBaseUrl`
-
-These values are used for provider checkout initialization and redirect fallback behavior when `successUrl` is not explicitly provided by the client request.
-
-See `/docs/environment-setup.md` for full configuration guide.
-
----
-
-## Deployment
-
-| Environment | URL                      | Branch      |
-| ----------- | ------------------------ | ----------- |
-| Development | Local Docker             | `feature/*` |
-| Staging     | `staging.corefamily.com` | `develop`   |
-| Production  | `corefamily.com`         | `main`      |
-
-Deployments are handled via GitHub Actions CI/CD pipelines in `/devops/github-actions/`.
-
----
-
-## Mission
-
-> Strengthen marriages, empower parents, and build stable families worldwide through structured education, verified counseling, and principle-based relationship development.
-
-**Target Impact**: Reduce divorce rates in participating communities by 60%.
-
----
-
-## License
-
-Proprietary — © Core Family. All rights reserved.
+## Help
+To learn more about the template go to the [project website](https://cleanarchitecture.jasontaylor.dev). Here you can find additional guidance, request new features, report a bug, and discuss the template with other users.
