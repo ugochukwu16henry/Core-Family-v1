@@ -1,0 +1,27 @@
+<div class="admin-users">
+  <h2>User Management</h2>
+  <div *ngIf="loading">Loading users...</div>
+  <div *ngIf="error">{{ error }}</div>
+  <table *ngIf="!loading && users.length">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Roles</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users">
+        <td>{{ user.userName }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.roles.join(', ') }}</td>
+        <td>
+          <!-- Add role management actions here -->
+          <button>Edit Roles</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div *ngIf="!loading && !users.length">No users found.</div>
+</div>
