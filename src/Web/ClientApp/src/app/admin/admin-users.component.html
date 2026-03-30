@@ -15,10 +15,17 @@
       <tr *ngFor="let user of users">
         <td>{{ user.userName }}</td>
         <td>{{ user.email }}</td>
-        <td>{{ user.roles.join(", ") }}</td>
         <td>
-          <!-- Add role management actions here -->
-          <button>Edit Roles</button>
+          <span *ngFor="let role of user.roles" class="role-chip">
+            {{ role }}
+            <button (click)="removeRole(user, role)" title="Remove role" class="remove-role">&times;</button>
+          </span>
+        </td>
+        <td>
+          <select #roleSelect>
+            <option *ngFor="let role of getAssignableRoles(user)" [value]="role">{{ role }}</option>
+          </select>
+          <button (click)="assignRole(user, roleSelect.value)" [disabled]="getAssignableRoles(user).length === 0">Add Role</button>
         </td>
       </tr>
     </tbody>

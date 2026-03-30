@@ -8,6 +8,14 @@ interface User {
   roles: string[];
 }
 
+const ALL_ROLES = [
+  'Administrator',
+  'Admin',
+  'Single',
+  'Married',
+  'Counselor'
+];
+
 @Component({
   selector: 'app-admin-users',
   templateUrl: './admin-users.component.html',
@@ -38,5 +46,29 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
-  // Add methods for role management here
+  assignRole(user: User, role: string) {
+    this.http.post(`/api/admin/users/${user.id}/roles/${role}`, {}).subscribe({
+      next: () => {
+        user.roles.push(role);
+      },
+      error: () => {
+        this.error = `Failed to assign role ${role}`;
+      }
+    });
+  }
+
+  removeRole(user: User, role: string) {
+    this.http.delete(`/api/admin/users/${user.id}/roles/${role}`).subscribe({
+      next: () => {
+        user.roles = user.roles.filter(r => r !== role);
+      },
+      error: () => {
+        this.error = `Failed to remove role ${role}`;
+      }
+    });
+  }
+
+  getAssignableRoles(user: User): string[] {
+    return ALL_ROLES.filter(role => !user.roles.includes(role));
+  }
 }
